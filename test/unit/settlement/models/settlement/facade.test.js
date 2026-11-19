@@ -38,8 +38,13 @@ const SettlementFacade = require('../../../../../src/settlement/models/settlemen
 const ParticipantFacade = require('../../../../../src/models/participant/facade')
 const idGenerator = require('@mojaloop/central-services-shared').Util.id
 const Utility = require('../../../../../src/settlement/lib/utility')
-const FSPIOPError = require('@mojaloop/central-services-error-handling').Factory.FSPIOPError
+const ErrorHandler = require('@mojaloop/central-services-error-handling')
+const FSPIOPError = ErrorHandler.Factory.FSPIOPError
 const Config = require('../../../../../src/lib/config')
+
+// The putById() tests replace the transfer helpers on the facade with stubs and leave them there. These
+// are the real ones, for the tests that have to run them.
+const { settlementTransfersPrepare, settlementTransfersReserve, settlementTransfersCommit } = SettlementFacade
 
 const generateULID = idGenerator({ type: 'ulid' })
 
@@ -3773,6 +3778,14 @@ Test('Settlement facade', async (settlementFacadeTest) => {
         { code: 'ER_LOCK_DEADLOCK', errno: 1213, sqlState: '40001' }
       )
 
+      // An object on which `methods` are called in that order. The last call resolves with result().
+      const query = (methods, result) => methods.reduceRight(
+        (next, method) => () => ({ [method]: next }),
+        async () => result()
+      )()
+      // Rows read from the database are new objects on every read.
+      const copyOf = rows => () => rows.map(row => ({ ...row }))
+
       /**
        * Stubs the queries putById() runs to move the one account of a settlement from PS_TRANSFERS_RECORDED
        * to PS_TRANSFERS_RESERVED, each with the calls putById() chains on it. Every read resolves with new
@@ -3789,12 +3802,6 @@ Test('Settlement facade', async (settlementFacadeTest) => {
           autoPositionReset: true,
           requireLiquidityCheck: true
         })
-        const copyOf = rows => () => rows.map(row => ({ ...row }))
-        // An object on which `methods` are called in that order. The last call resolves with result().
-        const query = (methods, result) => methods.reduceRight(
-          (next, method) => () => ({ [method]: next }),
-          async () => result()
-        )()
 
         const knexStub = sandbox.stub()
         knexStub.withArgs('settlement AS s')
@@ -3883,6 +3890,165 @@ Test('Settlement facade', async (settlementFacadeTest) => {
           test.end()
         }
       })
+
+      // The settlement transfer that credits 70 to the net recipient, as the reserve and commit steps read it.
+      const settlementTransfer = {
+        transferId: 'settlement-transfer',
+        ledgerEntryTypeId: enums.ledgerEntryTypes.SETTLEMENT_NET_RECIPIENT,
+        dfspAccountId: 1,
+        dfspAmount: 70,
+        hubAccountId: 2,
+        hubAmount: -70,
+        dfspName: 'dfsp_b',
+        currencyId: 'USD'
+      }
+      // The chain on which settlementTransfersReserve() and settlementTransfersCommit() read their transfers.
+      const settlementTransferList = ['join', 'join', 'leftJoin', 'join', 'join', 'join', 'join', 'select', 'where', 'whereNull', 'transacting']
+
+      /**
+       * Adds the queries of the real settlementTransfersReserve() to a stub of stubKnexForReserve().
+       * `positionLock` answers every SELECT ... FOR UPDATE of a position: the one of the net recipient,
+       * then the one of the hub. The net recipient is at -50 and `netDebitCap` is its limit.
+       */
+      const stubKnexForTransfersReserve = (knexStub, positionLock, netDebitCap) => {
+        knexStub.withArgs('settlementParticipantCurrency AS spc').returns({
+          // putById() reads the accounts of the settlement
+          ...query(['leftJoin', 'select', 'where', 'transacting', 'forUpdate'], copyOf(stubData.putById[1].spcList)),
+          // settlementTransfersReserve() reads the settlement transfers it has to reserve
+          ...query(settlementTransferList, copyOf([settlementTransfer]))
+        })
+        knexStub.withArgs('transferStateChange').returns(query(['insert', 'transacting'], () => [41]))
+        knexStub.withArgs('participantPosition').returns({
+          ...query(['select', 'where', 'first', 'transacting', 'forUpdate'], positionLock),
+          ...query(['update', 'where', 'transacting'], () => 1)
+        })
+        knexStub.withArgs('participantLimit')
+          .returns(query(['select', 'where', 'first', 'transacting', 'forUpdate'], () => ({ netDebitCap })))
+        knexStub.withArgs('participantPositionChange').returns(query(['insert', 'transacting'], () => [51]))
+      }
+      const netRecipientPosition = { dfspPositionId: 1, dfspPositionValue: -50, dfspReservedValue: 0 }
+      const hubPosition = { hubPositionId: 2, hubPositionValue: 50 }
+
+      await putByIdTest.test('retry the transaction when a statement of settlementTransfersReserve() meets the deadlock', async test => {
+        try {
+          const knexStub = stubKnexForReserve()
+          // The first transaction is rolled back while it waits for the position of the net recipient.
+          const positionLock = sandbox.stub()
+          positionLock.onCall(0).rejects(deadlockError())
+          positionLock.onCall(1).resolves({ ...netRecipientPosition })
+          positionLock.onCall(2).resolves({ ...hubPosition })
+          stubKnexForTransfersReserve(knexStub, positionLock, 1000)
+          knexStub.transaction = sandbox.stub().callsFake(trxFunction => trxFunction(sandbox.stub()))
+          sandbox.replace(SettlementFacade, 'settlementTransfersReserve', settlementTransfersReserve)
+          sandbox.stub(Utility, 'produceGeneralMessage').resolves()
+
+          const outcome = SettlementFacade.putById(1, payload.putById[1], enums)
+            .then(result => ({ result }), error => ({ error }))
+          await clock.runAllAsync()
+          const { result, error } = await outcome
+
+          test.notOk(error, 'does not throw')
+          test.equal(knexStub.transaction.callCount, 2, 'retries the transaction once')
+          test.equal(positionLock.callCount, 3, 'the second transaction locks the positions of the net recipient and of the hub')
+          test.equal(result.state, enums.settlementStates.PS_TRANSFERS_RESERVED, 'returns the result of the transaction that committed')
+          test.ok(Utility.produceGeneralMessage.calledOnce, 'sends one notification')
+          const [, , notification] = Utility.produceGeneralMessage.firstCall.args
+          test.deepEqual(
+            [notification.to, notification.metadata.event.action, notification.content.payload.currency, notification.content.payload.value],
+            ['dfsp_b', 'settlement-transfer-position-change', 'USD', 20],
+            'to the net recipient, with its new position'
+          )
+          test.end()
+        } catch (err) {
+          logger.error(`putById failed with error - ${err}`)
+          test.fail()
+          test.end()
+        }
+      })
+
+      await putByIdTest.test('retry the transaction when ParticipantFacade.adjustLimits() has reformatted the deadlock', async test => {
+        try {
+          const knexStub = stubKnexForReserve()
+          const positionLock = sandbox.stub()
+          positionLock.onCall(0).resolves({ ...netRecipientPosition })
+          positionLock.onCall(1).resolves({ ...netRecipientPosition })
+          positionLock.onCall(2).resolves({ ...hubPosition })
+          // A net debit cap of 10 is exceeded by the 70, so the reserve step raises the limit.
+          stubKnexForTransfersReserve(knexStub, positionLock, 10)
+          // adjustLimits() rethrows what it catches as an FSPIOP error, which has no code and no errno.
+          const adjustLimits = sandbox.stub()
+          adjustLimits.onFirstCall().rejects(ErrorHandler.Factory.reformatFSPIOPError(deadlockError()))
+          adjustLimits.onSecondCall().resolves()
+          sandbox.replace(ParticipantFacade, 'adjustLimits', adjustLimits)
+          knexStub.transaction = sandbox.stub().callsFake(trxFunction => trxFunction(sandbox.stub()))
+          sandbox.replace(SettlementFacade, 'settlementTransfersReserve', settlementTransfersReserve)
+          sandbox.stub(Utility, 'produceGeneralMessage').resolves()
+
+          const outcome = SettlementFacade.putById(1, payload.putById[1], enums)
+            .then(result => ({ result }), error => ({ error }))
+          await clock.runAllAsync()
+          const { result, error } = await outcome
+
+          test.notOk(error, 'does not throw')
+          test.equal(knexStub.transaction.callCount, 2, 'retries the transaction once')
+          test.equal(adjustLimits.callCount, 2, 'the second transaction raises the limit')
+          test.equal(result.state, enums.settlementStates.PS_TRANSFERS_RESERVED, 'returns the result of the transaction that committed')
+          test.ok(Utility.produceGeneralMessage.calledOnce, 'sends one notification')
+          test.end()
+        } catch (err) {
+          logger.error(`putById failed with error - ${err}`)
+          test.fail()
+          test.end()
+        }
+      })
+
+      // What each transfer helper reads before its first statement, and the table that statement writes to.
+      const transferHelpers = {
+        settlementTransfersPrepare: {
+          run: trx => settlementTransfersPrepare(1, 'timestamp', enums, trx),
+          transferList: ['join', 'join', 'leftJoin', 'select', 'where', 'where', 'whereNotNull', 'whereNull', 'transacting'],
+          transfer: { settlementTransferId: 'settlement-transfer', netAmount: -70, participantCurrencyId: 1, participantId: 1, currencyId: 'USD' },
+          firstWrite: 'transferDuplicateCheck'
+        },
+        settlementTransfersReserve: {
+          run: trx => settlementTransfersReserve(1, 'timestamp', true, enums, trx),
+          transferList: settlementTransferList,
+          transfer: settlementTransfer,
+          firstWrite: 'transferStateChange'
+        },
+        settlementTransfersCommit: {
+          run: trx => settlementTransfersCommit(1, 'timestamp', enums, trx),
+          transferList: settlementTransferList,
+          transfer: settlementTransfer,
+          firstWrite: 'transferFulfilmentDuplicateCheck'
+        }
+      }
+      for (const [name, { run, transferList, transfer, firstWrite }] of Object.entries(transferHelpers)) {
+        await putByIdTest.test(`get a deadlock from ${name}() as the driver raised it, and any other error as an FSPIOP error`, async test => {
+          try {
+            const knexStub = sandbox.stub()
+            const write = sandbox.stub()
+            knexStub.withArgs('settlementParticipantCurrency AS spc').returns(query(transferList, copyOf([transfer])))
+            knexStub.withArgs(firstWrite).returns(query(['insert', 'transacting'], write))
+            sandbox.stub(Db, 'getKnex').returns(knexStub)
+
+            const deadlock = deadlockError()
+            write.onCall(0).rejects(deadlock)
+            write.onCall(1).rejects(new Error('Duplicate entry'))
+            const thrownForDeadlock = await run(sandbox.stub()).then(() => null, err => err)
+            const thrownForOther = await run(sandbox.stub()).then(() => null, err => err)
+
+            test.equal(thrownForDeadlock, deadlock, 'the deadlock error is not reformatted')
+            test.ok(thrownForOther instanceof FSPIOPError, 'another error is')
+            test.equal(thrownForOther.message, 'Duplicate entry')
+            test.end()
+          } catch (err) {
+            logger.error(`${name} failed with error - ${err}`)
+            test.fail()
+            test.end()
+          }
+        })
+      }
 
       await putByIdTest.end()
     } catch (err) {

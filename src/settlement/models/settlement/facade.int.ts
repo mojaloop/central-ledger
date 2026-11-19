@@ -35,7 +35,8 @@
  *   4. a settlement is created for the closed window;
  *   5. the settlement is walked through PS_TRANSFERS_RECORDED, PS_TRANSFERS_RESERVED,
  *      PS_TRANSFERS_COMMITTED and SETTLED, which moves the positions back and leaves the net debit
- *      caps alone;
+ *      caps alone. The reserve step first loses a deadlock against a second transaction, and is
+ *      retried;
  *   6. the next window, which holds transfers in two currencies, is refused while the currencies only
  *      balance against each other, and is closed once each of them balances.
  *
@@ -51,13 +52,13 @@
  *     TABLES privilege;
  *   - the wait of WINDOW_AGGREGATION.CLOSE_DELAY_MS before a window is closed, which happens in the
  *     deferredSettlement handler and is covered by that handler's unit test;
- *   - the deadlock retry of putById(). A deadlock cannot be staged reliably here, and no unit test
- *     exercises that path either.
+ *   - a deadlock anywhere but on the position of the net recipient in the reserve step, and one that
+ *     outlasts DEADLOCK.RETRIES. The unit tests of the settlement facade cover those.
  *
  * See "Settlement scenario" in the README for a sequence diagram.
  */
 
-import { after, before, describe, it } from 'node:test'
+import { after, before, describe, it, mock } from 'node:test'
 import assert from 'node:assert'
 
 import Harness, { MojaloopKafkaMessage } from '../../../testing/harness'
@@ -85,6 +86,7 @@ let SettlementWindowService: any
 let SettlementWindowModel: any
 let SettlementService: any
 let SettlementProducer: any
+let SettlementLogger: any
 let enums: any
 
 type Account = { participantId: number, accountId: number }
@@ -180,6 +182,64 @@ const moveAccounts = async (state: string, accounts: Array<Account>): Promise<st
   return result.state
 }
 
+/**
+ * Runs `putAccounts`, a call of putById(), so that its transaction loses a deadlock once, and resolves
+ * with how often putById() reported a deadlock and what it returned in the end.
+ *
+ * Another transaction locks the position of `positionAccountId` first. putById() locks the settlement
+ * and then waits for that position. The other transaction then asks for the settlement, which closes the
+ * cycle. The database rolls back the lighter of the two transactions, measured by the rows they have
+ * written, so the other one first writes more rows than putById() does. They are never committed.
+ */
+const loseDeadlockOnce = async (
+  positionAccountId: number, putAccounts: () => Promise<string>
+): Promise<{ deadlocks: number, state: string }> => {
+  const knex = await Db.getKnex()
+  const warn = mock.method(SettlementLogger, 'warn')
+  const other = await knex.transaction()
+  let result: Promise<string> | undefined
+  try {
+    await other('transferDuplicateCheck').insert(
+      Array.from({ length: 500 }, (_, index) => ({ transferId: `deadlock-weight-${index}`, hash: 'none' }))
+    )
+    await other('participantPosition').where('participantCurrencyId', positionAccountId).forUpdate().first()
+
+    result = putAccounts()
+    // Without a handler, a rejection that comes before the await below would end the process.
+    result.catch(() => {})
+    // Wait until putById() waits for the position. The database refreshes this view only when it has
+    // not been read for 100 ms, so asking more often than that would show the same rows forever.
+    const start = performance.now()
+    const untilPutByIdWaits = async (): Promise<void> => {
+      const [{ waiting }] = await knex('information_schema.INNODB_TRX')
+        .where('trx_state', 'LOCK WAIT')
+        .count('* AS waiting')
+      if (Number(waiting) > 0) {
+        return
+      }
+      assert(performance.now() - start < 10_000, 'putById() did not get to wait for the position within 10 s')
+      await new Promise(resolve => setTimeout(resolve, 200))
+      return untilPutByIdWaits()
+    }
+    await untilPutByIdWaits()
+
+    // Granted once the database has rolled putById()'s transaction back.
+    await other('settlement').where('settlementId', settlementId).forUpdate().first()
+    await other.rollback()
+
+    const state = await result
+    const deadlocks = warn.mock.calls.filter(call => String(call.arguments[0]).includes('deadlock detected')).length
+    return { deadlocks, state }
+  } finally {
+    warn.mock.restore()
+    // If something above failed, release the locks and let putById() finish before the next step.
+    if (!other.isCompleted()) {
+      await other.rollback()
+    }
+    await result?.catch(() => {})
+  }
+}
+
 /** Whether a message is a notification that a settlement changed a position. */
 const isSettlementNotification = (message: MojaloopKafkaMessage): boolean =>
   message.topic === topicNotification &&
@@ -210,6 +270,7 @@ describe('settlement/models/settlement/facade', () => {
     SettlementWindowModel = require('../settlementWindow')
     SettlementService = require('../../domain/settlement')
     SettlementProducer = require('../../lib/kafka/producer')
+    SettlementLogger = require('../../shared/logger').logger
 
     // The object the API handlers build through request.server.methods.enums(name).
     const Enums = require('../lib/enums')
@@ -376,8 +437,12 @@ describe('settlement/models/settlement/facade', () => {
     assert.equal(await moveAccounts('PS_TRANSFERS_RECORDED', both), 'PS_TRANSFERS_RECORDED')
     assert.deepEqual(await positions(), ['50.0000', '-50.0000'])
 
-    // Reserves them: the net recipient is credited and notified.
-    assert.equal(await moveAccounts('PS_TRANSFERS_RESERVED', both), 'PS_TRANSFERS_RESERVED')
+    // Reserves them: the net recipient is credited and notified. The first attempt loses a deadlock while
+    // it waits for the position of the net recipient, and putById() runs its transaction again.
+    assert.deepEqual(
+      await loseDeadlockOnce(netRecipient.accountId, () => moveAccounts('PS_TRANSFERS_RESERVED', both)),
+      { deadlocks: 1, state: 'PS_TRANSFERS_RESERVED' }
+    )
     assert.deepEqual(await positions(), ['50.0000', '20.0000'])
     await waitForLastMessage(harness, positionNotification('dfsp_b', 20), 'the position notification of dfsp_b')
     // It is the first one: recording the transfers notified nobody.

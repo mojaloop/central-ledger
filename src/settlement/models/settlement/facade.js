@@ -45,11 +45,30 @@ const SettlementModelModel = require('./settlementModel')
 const { logger } = require('../../shared/logger')
 const generateULID = idGenerator({ type: 'ulid' })
 
+/**
+ * Whether an error is the database's report that it rolled a transaction back to break a deadlock.
+ *
+ * mysql2 identifies it by `code` and `errno`. Both are lost when the error is reformatted into an FSPIOP
+ * error, which keeps the message and the stack only. That is why the transfer helpers pass a deadlock
+ * error on as it is (see _reformatUnlessDeadlock). ParticipantFacade.adjustLimits(), which the reserve
+ * step calls, still reformats what it catches, so the message is checked as well: for the name of the
+ * error, which the mysql driver puts there, and for the text the server gives it, which mysql2 keeps.
+ */
 const _isDeadlockError = (err) =>
   err?.code === 'ER_LOCK_DEADLOCK' ||
   err?.errno === 1213 ||
   err?.message?.includes('ER_LOCK_DEADLOCK') ||
+  err?.message?.includes('Deadlock found when trying to get lock') ||
   (typeof err?.cause === 'string' && err.cause.includes('ER_LOCK_DEADLOCK'))
+
+/**
+ * What settlementTransfersPrepare(), settlementTransfersReserve() and settlementTransfersCommit() throw
+ * for a statement that failed: an FSPIOP error, except for a deadlock. A deadlock rolls back the whole
+ * transaction, which is putById()'s, so its error is passed on as the driver raised it for putById() to
+ * recognise and retry. putById() reformats it if it gives up.
+ */
+const _reformatUnlessDeadlock = (err) =>
+  _isDeadlockError(err) ? err : ErrorHandler.Factory.reformatFSPIOPError(err)
 
 /**
  * Reads the accounts of a settlement with their current state, and locks them.
@@ -261,7 +280,7 @@ const settlementTransfersPrepare = async function (settlementId, transactionTime
         .transacting(trx)
     } catch (err) {
       logger.error(err)
-      throw ErrorHandler.Factory.reformatFSPIOPError(err)
+      throw _reformatUnlessDeadlock(err)
     }
   }
 
@@ -430,7 +449,7 @@ const settlementTransfersReserve = async function (settlementId, transactionTime
       }
     } catch (err) {
       logger.error(err)
-      throw ErrorHandler.Factory.reformatFSPIOPError(err)
+      throw _reformatUnlessDeadlock(err)
     }
   }
 
@@ -754,7 +773,7 @@ const settlementTransfersCommit = async function (settlementId, transactionTimes
       }
     } catch (err) {
       logger.error(err)
-      throw ErrorHandler.Factory.reformatFSPIOPError(err)
+      throw _reformatUnlessDeadlock(err)
     }
   }
 

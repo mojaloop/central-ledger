@@ -272,11 +272,25 @@ sequenceDiagram
     T->>S: settlementEventTrigger(window 1)
     S->>DB: settlement PENDING_SETTLEMENT, dfsp_a owes 70, dfsp_b is owed 70
 
-    loop PS_TRANSFERS_RECORDED, PS_TRANSFERS_RESERVED, PS_TRANSFERS_COMMITTED, SETTLED
+    T->>S: putById(accounts, PS_TRANSFERS_RECORDED)
+    S->>DB: account states and settlement transfers
+    T->>DB: assert settlement state, and positions unchanged
+
+    T->>DB: in a second transaction, lock the position of dfsp_b
+    T->>S: putById(accounts, PS_TRANSFERS_RESERVED)
+    S->>DB: lock the settlement, then wait for the position of dfsp_b
+    T->>DB: in the second transaction, ask for the settlement
+    DB--xS: deadlock, transaction rolled back
+    T->>DB: roll back the second transaction
+    S->>DB: retry: account states, settlement transfers, position of dfsp_b
+    S-->>K: position change notification for dfsp_b
+    T->>DB: assert one deadlock and one retry, settlement state and positions, and that the net debit cap of dfsp_b is untouched
+
+    loop PS_TRANSFERS_COMMITTED, SETTLED
         T->>S: putById(accounts, state)
         S->>DB: account states, settlement transfers, positions
-        S-->>K: position change notification (RESERVED and COMMITTED only)
-        T->>DB: assert settlement state and positions, and after RESERVED that the net debit cap of dfsp_b is untouched
+        S-->>K: position change notification (COMMITTED only)
+        T->>DB: assert settlement state and positions
     end
 
     T->>DB: assert settlement, window 1 and its content SETTLED
@@ -309,9 +323,9 @@ What it cannot show:
   `CREATE TEMPORARY TABLES` privilege.
 - The wait of `WINDOW_AGGREGATION.CLOSE_DELAY_MS` before a window is closed. That happens in the
   `deferredSettlement` handler, which the test does not go through; the handler's unit test covers it.
-- The deadlock retry of `putById()` (`DEADLOCK.RETRIES`, `DEADLOCK.RETRY_DELAY_MS`). A deadlock cannot
-  be staged reliably here. The unit tests of the settlement facade cover it instead, with a transaction
-  that fails with the deadlock error of the database driver.
+- A deadlock anywhere but on the position of the net recipient in the reserve step, where the test
+  stages one, and a deadlock that outlasts `DEADLOCK.RETRIES`. The unit tests of the settlement facade
+  cover those, with transactions that fail with the deadlock error of the database driver.
 
 ### Running Functional Tests
 
