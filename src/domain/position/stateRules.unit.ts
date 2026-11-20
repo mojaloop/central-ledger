@@ -120,6 +120,33 @@ const EXPECTED_FX_RESERVE_OUTCOMES: Record<string, Outcome> = {
   FAILED: 'unexpected'
 }
 
+// Expected outcome for a TIMEOUT_RESERVED position message, which expects RESERVED_TIMEOUT
+const EXPECTED_TIMEOUT_RESERVED_OUTCOMES: Record<string, Outcome> = {
+  RESERVED_TIMEOUT: 'apply',
+  EXPIRED_RESERVED: 'already_done',
+  RECEIVED_FULFIL: 'already_decided',
+  COMMITTED: 'already_decided',
+  SETTLED: 'already_decided',
+  RECEIVED_ERROR: 'already_decided',
+  ABORTED_ERROR: 'already_decided',
+  RECEIVED_PREPARE: 'unexpected',
+  RESERVED: 'unexpected',
+  RESERVED_FORWARDED: 'unexpected',
+  RECEIVED_REJECT: 'unexpected',
+  ABORTED_REJECTED: 'unexpected',
+  EXPIRED_PREPARED: 'unexpected',
+  INVALID: 'unexpected',
+  FAILED: 'unexpected',
+  RECEIVED_FULFIL_DEPENDENT: 'unexpected'
+}
+
+// Expected outcome for an FX_TIMEOUT_RESERVED position message: the same, except that the FXP's
+// fulfil may have been written after the timeout handler read the fxTransfer
+const EXPECTED_FX_TIMEOUT_RESERVED_OUTCOMES: Record<string, Outcome> = {
+  ...EXPECTED_TIMEOUT_RESERVED_OUTCOMES,
+  RECEIVED_FULFIL_DEPENDENT: 'already_decided'
+}
+
 const EXPECTED_OUTCOMES_BY_ACTION: Array<[string, Record<string, Outcome>]> = [
   [Action.PREPARE, EXPECTED_PREPARE_OUTCOMES],
   [Action.FX_PREPARE, EXPECTED_FX_PREPARE_OUTCOMES],
@@ -127,7 +154,9 @@ const EXPECTED_OUTCOMES_BY_ACTION: Array<[string, Record<string, Outcome>]> = [
   [Action.RESERVE, EXPECTED_COMMIT_OUTCOMES],
   [Action.ABORT, EXPECTED_ABORT_OUTCOMES],
   [Action.ABORT_VALIDATION, EXPECTED_ABORT_OUTCOMES],
-  [Action.FX_RESERVE, EXPECTED_FX_RESERVE_OUTCOMES]
+  [Action.FX_RESERVE, EXPECTED_FX_RESERVE_OUTCOMES],
+  [Action.TIMEOUT_RESERVED, EXPECTED_TIMEOUT_RESERVED_OUTCOMES],
+  [Action.FX_TIMEOUT_RESERVED, EXPECTED_FX_TIMEOUT_RESERVED_OUTCOMES]
 ]
 
 // Expected outcome for a commit step on an fxTransfer, which expects RECEIVED_FULFIL_DEPENDENT
@@ -198,7 +227,7 @@ describe('domain/position/stateRules', () => {
   }
 
   it('classifies any state for an action without rules as unexpected', () => {
-    assert.strictEqual(classify(Action.TIMEOUT_RESERVED, 'RESERVED_TIMEOUT'), 'unexpected')
+    assert.strictEqual(classify(Action.BULK_PREPARE, 'RECEIVED_PREPARE'), 'unexpected')
   })
 
   for (const [step, expectedOutcomes] of EXPECTED_OUTCOMES_BY_STEP) {

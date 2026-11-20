@@ -206,24 +206,24 @@ Test('timeout reserved domain', positionIndexTest => {
   })
 
   positionIndexTest.test('processPositionTimeoutReservedBin should', changeParticipantPositionTest => {
-    changeParticipantPositionTest.test('produce abort message for transfers not in the right transfer state', async (test) => {
-      try {
-        await processPositionTimeoutReservedBin(
-          binItems,
-          {
-            accumulatedPositionValue: 0, // Accumulated position value
-            accumulatedPositionReservedValue: 0,
-            accumulatedTransferStates: {
-              'd6a036a5-65a3-48af-a0c7-ee089c412ada': 'INVALID_STATE',
-              '7e3fa3f7-9a1b-4a81-83c9-5b41112dd7f5': 'INVALID_STATE'
-            },
-            transferInfoList: {}
-          }
-        )
-        test.fail('Error not thrown')
-      } catch (e) {
-        test.pass('Error thrown')
-      }
+    changeParticipantPositionTest.test('skip transfers not in the right transfer state', async (test) => {
+      const processedMessages = await processPositionTimeoutReservedBin(
+        binItems,
+        {
+          accumulatedPositionValue: 0, // Accumulated position value
+          accumulatedPositionReservedValue: 0,
+          accumulatedTransferStates: {
+            'd6a036a5-65a3-48af-a0c7-ee089c412ada': 'INVALID_STATE',
+            '7e3fa3f7-9a1b-4a81-83c9-5b41112dd7f5': 'INVALID_STATE'
+          },
+          transferInfoList: {}
+        }
+      )
+      test.equal(processedMessages.accumulatedPositionChanges.length, 0)
+      test.equal(processedMessages.accumulatedTransferStateChanges.length, 0)
+      test.equal(processedMessages.notifyMessages.length, 0)
+      test.equal(processedMessages.accumulatedPositionValue, 0)
+      test.deepEqual(binItems.map(binItem => binItem.result), [{ success: true }, { success: true }])
       test.end()
     })
 

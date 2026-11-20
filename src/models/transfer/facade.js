@@ -826,7 +826,9 @@ const _getTransferList = async (knex, tableName = 'transferTimeout', transaction
     .leftJoin('externalParticipant AS ep2', 'ep2.externalParticipantId', 'tp2.externalParticipantId')
     .innerJoin('participant AS p1', 'p1.participantId', 'tp1.participantId')
     .innerJoin('participant AS p2', 'p2.participantId', 'tp2.participantId')
-    .innerJoin(knex('transferStateChange AS tsc2')
+    // Left join: a transfer that expired before it was reserved has no position change, and must
+    // still be listed so its payer is notified.
+    .leftJoin(knex('transferStateChange AS tsc2')
       .select('tsc2.transferId', 'tsc2.transferStateChangeId', 'ppc1.participantCurrencyId')
       .innerJoin(`${tableName} AS tt2`, 'tt2.transferId', 'tsc2.transferId')
       .innerJoin('participantPositionChange AS ppc1', 'ppc1.transferStateChangeId', 'tsc2.transferStateChangeId')
@@ -879,7 +881,9 @@ const _getFxTransferList = async (knex, tableName = 'fxTransferTimeout', transac
     .leftJoin('externalParticipant AS ep2', 'ep2.externalParticipantId', 'ftp2.externalParticipantId')
     .innerJoin('participant AS p1', 'p1.participantId', 'ftp1.participantId')
     .innerJoin('participant AS p2', 'p2.participantId', 'ftp2.participantId')
-    .innerJoin(knex('fxTransferStateChange AS ftsc2')
+    // Left join: an fxTransfer that expired before it was reserved has no position change, and must
+    // still be listed so its initiating FSP is notified.
+    .leftJoin(knex('fxTransferStateChange AS ftsc2')
       .select('ftsc2.commitRequestId', 'ftsc2.fxTransferStateChangeId', 'ppc1.participantCurrencyId')
       .innerJoin(`${tableName} AS ftt2`, 'ftt2.commitRequestId', 'ftsc2.commitRequestId')
       .innerJoin('participantPositionChange AS ppc1', 'ppc1.fxTransferStateChangeId', 'ftsc2.fxTransferStateChangeId')

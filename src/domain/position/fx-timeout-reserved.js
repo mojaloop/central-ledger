@@ -40,6 +40,8 @@ const Utility = require('@mojaloop/central-services-shared').Util
 const MLNumber = require('@mojaloop/ml-number')
 const Logger = require('../../shared/logger').logger
 const assert = require('node:assert')
+const StateRules = require('./stateRules')
+const { recordSkippedMessage } = require('./skippedMessage')
 
 /**
  * @function processPositionFxTimeoutReservedBin
@@ -82,10 +84,15 @@ const processPositionFxTimeoutReservedBin = async (
       const counterPartyFsp = binItem.message.value.to
       const initiatingFsp = binItem.message.value.from
 
-      // If the transfer is not in `RESERVED_TIMEOUT`, a position fx-timeout-reserved message was incorrectly published.
-      // i.e Something has gone extremely wrong.
-      if (accumulatedFxTransferStates[commitRequestId] !== Enum.Transfers.TransferInternalState.RESERVED_TIMEOUT) {
-        throw ErrorHandler.Factory.createInternalServerFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR.message)
+      // The reservation is released only from RESERVED_TIMEOUT. Any other state means this message is a
+      // duplicate or arrived after another decision: skip it without changing state or position,
+      // sending a notification or throwing.
+      // Read the running state, so a copy later in this bin sees what an earlier copy did.
+      const action = Enum.Events.Event.Action.FX_TIMEOUT_RESERVED
+      const currentState = accumulatedFxTransferStatesCopy[commitRequestId]
+      const outcome = StateRules.classify(action, currentState)
+      if (outcome !== StateRules.OUTCOME.APPLY) {
+        recordSkippedMessage(binItem, action, commitRequestId, outcome, currentState)
       } else {
         Logger.isDebugEnabled && Logger.debug(`accumulatedFxTransferStates: ${JSON.stringify(accumulatedFxTransferStates)}`)
 

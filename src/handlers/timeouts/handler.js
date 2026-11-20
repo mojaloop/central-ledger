@@ -79,6 +79,13 @@ const _processTimedOutTransfers = async (transferTimeoutList) => {
   log.verbose(`processing ${transferTimeoutList.length} timed out transfers...`)
 
   for (const TT of transferTimeoutList) {
+    // The listing returns a transfer with no position change once, with no account. A transfer in
+    // RESERVED_TIMEOUT must have one: without it there is nothing to release and no key to order the
+    // message with that account's other messages.
+    if (TT.transferStateId === Enum.Transfers.TransferInternalState.RESERVED_TIMEOUT && TT.effectedParticipantCurrencyId == null) {
+      log.error(`timed out transfer in RESERVED_TIMEOUT has no position change, not sent - transferId: ${TT.transferId}`)
+      continue
+    }
     const span = EventSdk.Tracer.createSpan('cl_transfer_timeout')
     try {
       const state = Utility.StreamingProtocol.createEventState(Enum.Events.EventStatus.FAILURE.status, fspiopError.errorInformation.errorCode, fspiopError.errorInformation.errorDescription)
@@ -140,7 +147,7 @@ const _processTimedOutTransfers = async (transferTimeoutList) => {
           await Kafka.produceGeneralMessage(
             Config.KAFKA_CONFIG,
             Producer,
-            Enum.Kafka.Topics.BULK_PROCESSING,
+            Type.BULK_PROCESSING,
             Action.BULK_TIMEOUT_RECEIVED,
             message,
             state,
@@ -303,6 +310,11 @@ const _processFxTimedOutTransfers = async (fxTransferTimeoutList) => {
   log.verbose(`processing ${fxTransferTimeoutList.length} timed out fxTransfers...`)
 
   for (const fTT of fxTransferTimeoutList) {
+    // As for transfers: an fxTransfer in RESERVED_TIMEOUT must have a position change to release.
+    if (fTT.transferStateId === Enum.Transfers.TransferInternalState.RESERVED_TIMEOUT && fTT.effectedParticipantCurrencyId == null) {
+      log.error(`timed out fxTransfer in RESERVED_TIMEOUT has no position change, not sent - commitRequestId: ${fTT.commitRequestId}`)
+      continue
+    }
     const span = EventSdk.Tracer.createSpan('cl_fx_transfer_timeout')
     try {
       const state = Utility.StreamingProtocol.createEventState(Enum.Events.EventStatus.FAILURE.status, fspiopError.errorInformation.errorCode, fspiopError.errorInformation.errorDescription)

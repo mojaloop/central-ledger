@@ -299,6 +299,9 @@ export default class Harness {
           ADMIN: {
             TRANSFER: innerKafkaConfig
           },
+          BULK: {
+            PROCESSING: innerKafkaConfig
+          },
           TRANSFER: {
             PREPARE: innerKafkaConfig,
             FULFIL: innerKafkaConfig,
@@ -321,6 +324,7 @@ export default class Harness {
       'topic-transfer-position-batch',
       'topic-notification-event',
       'topic-admin-transfer',
+      'topic-bulk-processing',
     ], (message) => {
       if (message.topic === '__consumer_offsets') {
         return
@@ -718,6 +722,8 @@ export type MojaloopKafkaMessage = {
   partition: number,
   offset: number,
   valueParsed: {
+    from: string,
+    to: string,
     content: {
       uriParams: any
       context: any,
@@ -750,6 +756,7 @@ class Redpanda {
     'topic-notification-event',
     'topic-admin-transfer',
     'topic-transfer-position-batch',
+    'topic-bulk-processing',
   ]
 
   constructor(options: DependencyOptions) {

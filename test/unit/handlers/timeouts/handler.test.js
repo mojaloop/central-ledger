@@ -205,6 +205,9 @@ Test('Timeout handler', TimeoutHandlerTest => {
           test.equal(message.args[6], '0')
         }
       }
+      const bulkTimeoutReceivedCalls = produceGeneralMessageCalls.filter(call => call.args[3] === Enum.Events.Event.Action.BULK_TIMEOUT_RECEIVED)
+      test.equal(bulkTimeoutReceivedCalls.length, 1, 'one bulk-timeout-received message')
+      test.equal(bulkTimeoutReceivedCalls[0].args[2], 'bulk-processing', 'produced for the bulk-processing functionality')
       test.deepEqual(result, expected, 'Expected result is returned')
       test.equal(Utility.produceGeneralMessage.callCount, 6, '6 messages were produced')
       test.end()
@@ -249,6 +252,47 @@ Test('Timeout handler', TimeoutHandlerTest => {
       }
       test.deepEqual(result, expected1, 'Expected result is returned')
       test.equal(Utility.produceGeneralMessage.callCount, 2, '2 messages were produced')
+      test.end()
+    })
+
+    timeoutTest.test('notify EXPIRED_PREPARED with no position change, and skip RESERVED_TIMEOUT with no position change', async (test) => {
+      // The listing left-joins position changes, so a transfer with none comes back with no account
+      const expiredPreparedId = randomUUID()
+      const noPositionChange = {
+        transferTimeoutList: [
+          { transferId: expiredPreparedId, bulkTransferId: null, payerFsp: 'dfsp1', payeeFsp: 'dfsp2', transferStateId: Enum.Transfers.TransferInternalState.EXPIRED_PREPARED, payerParticipantCurrencyId: 0, effectedParticipantCurrencyId: null },
+          { transferId: randomUUID(), bulkTransferId: null, payerFsp: 'dfsp1', payeeFsp: 'dfsp2', transferStateId: Enum.Transfers.TransferInternalState.RESERVED_TIMEOUT, payerParticipantCurrencyId: 0, effectedParticipantCurrencyId: null },
+          { transferId: randomUUID(), bulkTransferId: randomUUID(), payerFsp: 'dfsp1', payeeFsp: 'dfsp2', transferStateId: Enum.Transfers.TransferInternalState.RESERVED_TIMEOUT, payerParticipantCurrencyId: 0, effectedParticipantCurrencyId: null }
+        ],
+        fxTransferTimeoutList: [
+          { commitRequestId: randomUUID(), initiatingFsp: 'dfsp1', counterPartyFsp: 'dfsp2', transferStateId: Enum.Transfers.TransferInternalState.RESERVED_TIMEOUT, effectedParticipantCurrencyId: null }
+        ]
+      }
+
+      TimeoutService.getTimeoutSegment = sandbox.stub().returns(timeoutSegmentMock)
+      TimeoutService.getFxTimeoutSegment = sandbox.stub().returns(timeoutSegmentMock)
+      TimeoutService.cleanupTransferTimeout = sandbox.stub().returns(1)
+      TimeoutService.cleanupFxTransferTimeout = sandbox.stub().returns(1)
+      TimeoutService.getLatestTransferStateChange = sandbox.stub().returns(latestTransferStateChangeMock)
+      TimeoutService.getLatestFxTransferStateChange = sandbox.stub().returns(latestFxTransferStateChangeMock)
+      TimeoutService.timeoutExpireReserved = sandbox.stub().returns(noPositionChange)
+      TimeoutService.reservedForwardedTransfers = sandbox.stub().returns({ transferForwardedList: [], fxTransferForwardedList: [] })
+      Utility.produceGeneralMessage = sandbox.stub()
+
+      const TimeoutHandlerProxy = Proxyquire('../../../../src/handlers/timeouts/handler', {
+        '../../lib/distLock': {
+          createLock: createDistLockStub
+        }
+      })
+
+      await TimeoutHandlerProxy.registerTimeoutHandler()
+      await TimeoutHandlerProxy.timeout()
+
+      const calls = Utility.produceGeneralMessage.getCalls()
+      test.equal(calls.length, 1, 'only the EXPIRED_PREPARED notification is produced')
+      test.equal(calls[0].args[2], Enum.Kafka.Topics.NOTIFICATION, 'sent to the notification topic')
+      test.equal(calls[0].args[3], Enum.Events.Event.Action.TIMEOUT_RECEIVED, 'as timeout-received')
+      test.equal(calls[0].args[4].id, expiredPreparedId, 'for the transfer that expired before it was reserved')
       test.end()
     })
 
