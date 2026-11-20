@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [20.5.1](https://github.com/mojaloop/central-ledger/compare/v20.5.0...v20.5.1) (2026-11-20)
+
+
+### Bug Fixes
+
+* **timeouts:** notify transfers that expire before reservation, and make timeout-reserved idempotent ([#1320](https://github.com/mojaloop/central-ledger/issues/1320)) ([7e11fda](https://github.com/mojaloop/central-ledger/commit/7e11fdaa11e58dc2902021c0e1df1a1e25b5e16e))
+
+
+### Chore
+
+* **sbom:** update sbom [skip ci] ([5dbc6dd](https://github.com/mojaloop/central-ledger/commit/5dbc6dd1185b4a1263f585b8e51f97783b566ad2))
+
 ## [20.5.0](https://github.com/mojaloop/central-ledger/compare/v20.4.1...v20.5.0) (2026-11-19)
 
 
