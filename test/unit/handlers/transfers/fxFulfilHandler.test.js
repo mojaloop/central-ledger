@@ -55,7 +55,7 @@ const ProxyCache = require('#src/lib/proxyCache')
 
 const { Kafka, Comparators } = Util
 const { Action, Type } = Enum.Events.Event
-const { TransferState } = Enum.Transfers
+const { TransferState, TransferInternalState } = Enum.Transfers
 const { TOPICS } = fixtures
 
 let transferHandlers
@@ -186,13 +186,16 @@ Test('FX Transfer Fulfil handler -->', fxFulfilTest => {
     const kafkaMessage = fixtures.fxFulfilKafkaMessageDto({ content, metadata })
     const result = await transferHandlers.fulfil(null, kafkaMessage)
 
+    // A DFSP may not change another DFSP's fxTransfer: the error goes back to the sender only, and the
+    // fxTransfer is not aborted (no state change, no position message)
     t.ok(result)
     t.ok(producer.produceMessage.calledOnce)
     const [messageProtocol, topicConfig] = producer.produceMessage.lastCall.args
     t.equal(messageProtocol.from, fixtures.SWITCH_ID)
-    t.equal(messageProtocol.metadata.event.action, Action.FX_ABORT_VALIDATION)
+    t.equal(messageProtocol.metadata.event.action, Action.FX_RESERVE)
     checkErrorPayload(t)(messageProtocol.content.payload, fspiopErrorFactory.fxHeaderSourceValidationError())
-    t.ok(topicConfig.topicName === TOPICS.transferPosition || topicConfig.topicName === TOPICS.transferPositionBatch)
+    t.equal(topicConfig.topicName, TOPICS.notificationEvent, 'a notification, not a position message')
+    t.ok(fxTransferModel.fxTransfer.saveFxFulfilResponse.notCalled, 'the fxTransfer state is not changed')
     t.end()
   })
 
@@ -225,6 +228,7 @@ Test('FX Transfer Fulfil handler -->', fxFulfilTest => {
 
   fxFulfilTest.test('should process case with invalid fulfilment', async (t) => {
     const fxTransferDetails = fixtures.fxtGetAllDetailsByCommitRequestIdDto()
+    fxTransferDetails.expirationDate = new Date(Date.now() + 24 * 60 * 60 * 1000) // reserved and not expired: the fulfilment is checked
     sandbox.stub(FxFulfilService.prototype, 'getFxTransferDetails').resolves(fxTransferDetails)
     sandbox.stub(FxFulfilService.prototype, 'validateHeaders').resolves()
     sandbox.stub(FxFulfilService.prototype, 'validateEventType').resolves()
@@ -261,6 +265,43 @@ Test('FX Transfer Fulfil handler -->', fxFulfilTest => {
     t.equal(topicConfig.key, String(1))
     t.end()
   })
+
+  // The state and expiry checks run before the fulfilment check, so an invalid fulfilment can never abort
+  // an fxTransfer that is already final, or one the FXP has already fulfilled.
+  for (const { transferState, action, accepted } of [
+    { transferState: TransferInternalState.EXPIRED_RESERVED, action: Action.FX_RESERVE, accepted: false },
+    { transferState: TransferInternalState.ABORTED_ERROR, action: Action.FX_COMMIT, accepted: false },
+    { transferState: TransferInternalState.RECEIVED_FULFIL_DEPENDENT, action: Action.FX_RESERVE, accepted: false },
+    { transferState: TransferInternalState.RECEIVED_FULFIL_DEPENDENT, action: Action.FX_COMMIT, accepted: false },
+    { transferState: TransferInternalState.RECEIVED_FULFIL_DEPENDENT, action: Action.FX_ABORT, accepted: true }
+  ]) {
+    fxFulfilTest.test(`${accepted ? 'accept' : 'reject'} ${action} for an fxTransfer in ${transferState}`, async (t) => {
+      const fxTransferDetails = { ...fixtures.fxtGetAllDetailsByCommitRequestIdDto(), transferState, expirationDate: new Date(Date.now() + 24 * 60 * 60 * 1000) }
+      sandbox.stub(FxFulfilService.prototype, 'getFxTransferDetails').resolves(fxTransferDetails)
+      sandbox.stub(FxFulfilService.prototype, 'validateHeaders').resolves()
+      sandbox.stub(FxFulfilService.prototype, 'validateEventType').resolves()
+      const validateFulfilment = sandbox.stub(FxFulfilService.prototype, 'validateFulfilment').resolves(true)
+      const processFxAbort = sandbox.stub(FxFulfilService.prototype, 'processFxAbort').resolves(true)
+      Comparators.duplicateCheckComparator.resolves({ hasDuplicateId: false, hasDuplicateHash: false })
+      const metadata = fixtures.fulfilMetadataDto({ action })
+      const kafkaMessage = fixtures.fxFulfilKafkaMessageDto({ metadata })
+
+      const result = await transferHandlers.fulfil(null, kafkaMessage)
+
+      t.ok(result)
+      if (accepted) {
+        t.ok(processFxAbort.calledOnce, 'the error callback aborts the fxTransfer')
+      } else {
+        t.ok(producer.produceMessage.calledOnce)
+        const [messageProtocol, topicConfig] = producer.produceMessage.lastCall.args
+        checkErrorPayload(t)(messageProtocol.content.payload, fspiopErrorFactory.fxTransferNonReservedState())
+        t.equal(topicConfig.topicName, TOPICS.notificationEvent, 'the state error to the sender, no position message')
+        t.ok(validateFulfilment.notCalled, 'the fulfilment is not checked, so it cannot abort the fxTransfer')
+        t.ok(fxTransferModel.fxTransfer.saveFxFulfilResponse.notCalled, 'the fxTransfer state is not changed')
+      }
+      t.end()
+    })
+  }
 
   fxFulfilTest.test('should detect invalid fxTransfer state', async (t) => {
     const transferState = 'wrongState'

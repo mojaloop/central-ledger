@@ -48,6 +48,13 @@ const Time = require('@mojaloop/central-services-shared').Util.Time
 const { randomUUID } = require('crypto')
 const cloneDeep = require('lodash').cloneDeep
 
+// Stubs where(), for the latest-state check in savePayeeTransferResponse: where().orderBy().first()
+const latestStateStub = (transferStateId) => Sinon.stub().returns({
+  orderBy: Sinon.stub().returns({
+    first: Sinon.stub().resolves(transferStateId ? { transferStateId } : undefined)
+  })
+})
+
 Test('Transfer facade', async (transferFacadeTest) => {
   let sandbox
   let clock
@@ -648,7 +655,8 @@ Test('Transfer facade', async (transferFacadeTest) => {
           const insertStub = sandbox.stub()
           knexStub.returns({
             transacting: transactingStub.returns({
-              insert: insertStub
+              insert: insertStub,
+              where: latestStateStub(Enum.Transfers.TransferInternalState.RESERVED)
             })
           })
 
@@ -656,7 +664,7 @@ Test('Transfer facade', async (transferFacadeTest) => {
           test.deepEqual(response, savePayeeTransferResponseResult, 'response matches expected result')
           test.ok(knexStub.withArgs('transferFulfilment').calledOnce, 'knex called with transferFulfilment once')
           test.ok(knexStub.withArgs('transferExtension').calledTwice, 'knex called with transferExtension twice')
-          test.ok(knexStub.withArgs('transferStateChange').calledOnce, 'knex called with transferStateChange once')
+          test.ok(knexStub.withArgs('transferStateChange').calledTwice, 'knex called with transferStateChange twice: the state check and the insert')
           test.ok(transactingStub.withArgs(trxStub).called, 'knex.transacting called with trx')
           test.ok(insertStub.withArgs(transferFulfilmentRecord).calledOnce, 'insert transferFulfilmentRecord called once')
           for (const extension of transferExtensionRecords) {
@@ -725,7 +733,8 @@ Test('Transfer facade', async (transferFacadeTest) => {
                   first: sandbox.stub().returns({
                     orderBy: sandbox.stub().returns(insertedTransferStateChange)
                   })
-                })
+                }),
+                ...latestStateStub(Enum.Transfers.TransferInternalState.RESERVED)()
               })
             })
           })
@@ -748,7 +757,7 @@ Test('Transfer facade', async (transferFacadeTest) => {
           test.deepEqual(response, expected, 'response matches expected result')
           test.ok(knexStub.withArgs('transferFulfilment').calledOnce, 'knex called with transferFulfilment once')
           test.ok(knexStub.withArgs('transferExtension').notCalled, 'knex not called with transferExtension')
-          test.ok(knexStub.withArgs('transferStateChange').calledTwice, 'knex called with transferStateChange twice')
+          test.ok(knexStub.withArgs('transferStateChange').calledThrice, 'knex called with transferStateChange three times: the state check, the insert and the error record lookup')
           test.ok(transactingStub.withArgs(trxStub).called, 'knex.transacting called with trx')
           test.ok(insertStub.withArgs(transferFulfilmentRecord).notCalled, 'insert transferFulfilmentRecord not called')
           test.ok(insertStub.withArgs(transferStateChangeRecord).notCalled, 'insert transferStateChangeRecord not called')
@@ -812,7 +821,8 @@ Test('Transfer facade', async (transferFacadeTest) => {
                   first: sandbox.stub().returns({
                     orderBy: sandbox.stub().returns(insertedTransferStateChange)
                   })
-                })
+                }),
+                ...latestStateStub(Enum.Transfers.TransferInternalState.RESERVED)()
               })
             })
           })
@@ -834,7 +844,7 @@ Test('Transfer facade', async (transferFacadeTest) => {
           test.deepEqual(response, expected, 'response matches expected result')
           test.ok(knexStub.withArgs('transferFulfilment').notCalled, 'knex not called with transferFulfilment')
           test.ok(knexStub.withArgs('transferExtension').notCalled, 'knex not called with transferExtension')
-          test.ok(knexStub.withArgs('transferStateChange').calledTwice, 'knex called with transferStateChange twice')
+          test.ok(knexStub.withArgs('transferStateChange').calledThrice, 'knex called with transferStateChange three times: the state check, the insert and the error record lookup')
           test.ok(transactingStub.withArgs(trxStub).called, 'knex.transacting called with trx')
           test.ok(insertStub.withArgs(transferFulfilmentRecord).notCalled, 'insert transferFulfilmentRecord not called')
           test.ok(insertStub.withArgs(transferStateChangeRecord).notCalled, 'insert transferStateChangeRecord not called')
@@ -866,7 +876,8 @@ Test('Transfer facade', async (transferFacadeTest) => {
           const transactingStub = sandbox.stub()
           knexStub.returns({
             transacting: transactingStub.returns({
-              insert: sandbox.stub().throws(new Error('insert error'))
+              insert: sandbox.stub().throws(new Error('insert error')),
+              where: latestStateStub(Enum.Transfers.TransferInternalState.RESERVED)
             })
           })
 
@@ -875,9 +886,50 @@ Test('Transfer facade', async (transferFacadeTest) => {
           test.end()
         } catch (err) {
           Logger.error(`savePayeeTransferResponse failed with error - ${err}`)
-          test.pass('Error thrown')
+          test.ok(err.message.includes('insert error'), 'the insert error is thrown')
           test.end()
         }
+      })
+
+      for (const { state, action: responseAction } of [
+        { state: Enum.Transfers.TransferState.COMMITTED, action: TransferEventAction.ABORT_VALIDATION },
+        { state: Enum.Transfers.TransferInternalState.ABORTED_ERROR, action: TransferEventAction.ABORT_VALIDATION },
+        { state: Enum.Transfers.TransferInternalState.EXPIRED_RESERVED, action: TransferEventAction.COMMIT },
+        { state: Enum.Transfers.TransferInternalState.RECEIVED_FULFIL, action: TransferEventAction.ABORT },
+        { state: undefined, action: TransferEventAction.COMMIT }
+      ]) {
+        await savePayeeTransferResponse.test(`refuse a ${responseAction} for a transfer in state ${state}, writing nothing`, async (test) => {
+          sandbox.stub(Db, 'getKnex')
+          const knexStub = sandbox.stub()
+          knexStub.transaction = sandbox.stub().callsArgWith(0, sandbox.stub())
+          Db.getKnex.returns(knexStub)
+          const insertStub = sandbox.stub()
+          knexStub.returns({ transacting: sandbox.stub().returns({ insert: insertStub, where: latestStateStub(state) }) })
+
+          try {
+            await TransferFacade.savePayeeTransferResponse(transferId, { fulfilment: 'f', errorInformation: { errorCode: '3100', errorDescription: 'x' } }, responseAction, null)
+            test.fail('Error not thrown')
+          } catch (err) {
+            test.equal(err.apiErrorCode?.code, '3100', 'a validation error is thrown')
+            test.ok(err.message.includes('non-RESERVED transfer state'), 'naming the state check')
+            test.ok(insertStub.notCalled, 'nothing is written')
+          }
+          test.end()
+        })
+      }
+
+      await savePayeeTransferResponse.test('accept a payee response for a RESERVED_FORWARDED (interscheme) transfer', async (test) => {
+        sandbox.stub(Db, 'getKnex')
+        const knexStub = sandbox.stub()
+        knexStub.transaction = sandbox.stub().callsArgWith(0, sandbox.stub())
+        Db.getKnex.returns(knexStub)
+        const insertStub = sandbox.stub()
+        knexStub.returns({ transacting: sandbox.stub().returns({ insert: insertStub, where: latestStateStub(Enum.Transfers.TransferInternalState.RESERVED_FORWARDED) }) })
+
+        const response = await TransferFacade.savePayeeTransferResponse(transferId, { errorInformation: { errorCode: '5000', errorDescription: 'x' } }, TransferEventAction.ABORT, null)
+        test.equal(response.savePayeeTransferResponseExecuted, true, 'the response is saved')
+        test.ok(insertStub.called, 'the state change is written')
+        test.end()
       })
 
       await savePayeeTransferResponse.end()

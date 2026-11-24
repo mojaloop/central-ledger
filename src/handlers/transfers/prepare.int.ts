@@ -1152,7 +1152,7 @@ describe('handlers/prepare', () => {
 
   it(
     `Scheme R: PUT /fxTransfer call I.e. From: FXP → To: Proxy AR
-      with wrong headers - ABORT VALIDATION`,
+      with wrong headers - rejected to the sender, fxTransfer not aborted`,
     async () => {
       const externalPayer = 'external_payer_scheme_r'
       await proxyCache.getCache().addDfspIdToProxyMapping(externalPayer, 'dfsp_a_proxy')
@@ -1179,15 +1179,20 @@ describe('handlers/prepare', () => {
       messageFulfil.value.content.headers['fspiop-source'] = 'wrongfsp'
       const mark = harness.redpandaMark()
       await TransferHandler.fulfil(null, messageFulfil)
-      await harness.redpandaDrain(mark, 2) // maybe 1?
+      await harness.redpandaDrain(mark, 1)
 
+      // A DFSP may not change another DFSP's fxTransfer: only the error is sent (no position message),
+      // and the fxTransfer is not aborted.
+      const [error] = harness.spoolLast(1)
+      assert.equal(error.topic, 'topic-notification-event')
+      assert.equal(error.valueParsed.content.payload.errorInformation.errorCode, '3100')
       const fxTransfer = await FxTransferService.getByIdLight('2000121')
-      assert.equal(fxTransfer.fxTransferState, 'ABORTED_ERROR')
+      assert.equal(fxTransfer.fxTransferState, 'RESERVED')
 
-      // Position is reverted.
-      const positionProxyAfterAbort = await ApiHelpers.getPositionAccount('dfsp_a_proxy', 'BWP')
-      assertPositionDiff('payer', positionProxyPre, positionProxyAfterAbort, {
-        posted: 0
+      // The reservation is kept.
+      const positionProxyAfterReject = await ApiHelpers.getPositionAccount('dfsp_a_proxy', 'BWP')
+      assertPositionDiff('payer', positionProxyPre, positionProxyAfterReject, {
+        posted: 100
       })
     })
 

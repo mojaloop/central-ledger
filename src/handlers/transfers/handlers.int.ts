@@ -403,15 +403,18 @@ describe('handlers/tranfers/handlers', () => {
 
     const mark = harness.redpandaMark()
     await handlerAll.fulfil(null, [ApiHelpers.buildMessageFulfil(harness, putTransfer, transferId)])
-    await harness.redpandaDrain(mark, 2)
+    await harness.redpandaDrain(mark, 1)
 
-    // Get the transfer:
-    const transfer = await TransferFacade.getById(transferId)
-    assert.equal(transfer.transferState, 'ABORTED_ERROR')
+    // A DFSP may not change another DFSP's transfer: the payer gets an error, and the transfer is not
+    // aborted.
+    const [error] = harness.spoolLast(1)
+    assert.equal(error.topic, 'topic-notification-event')
     assert.equal(
-      transfer.reason, 
+      error.valueParsed.content.payload.errorInformation.errorDescription,
       'Generic validation error - fspiop-destination does not match payer fsp on the Fulfil callback response'
     )
+    const transfer = await TransferFacade.getById(transferId)
+    assert.equal(transfer.transferState, 'RESERVED')
   })
 
   it('3rd dfsp cannot fulfill a payment.', async () => {
@@ -452,22 +455,21 @@ describe('handlers/tranfers/handlers', () => {
 
     mark = harness.redpandaMark()
     await handlerAll.fulfil(null, [ApiHelpers.buildMessageFulfil(harness, putTransfer, transferId)])
-    await harness.redpandaDrain(mark, 2)
+    await harness.redpandaDrain(mark, 1)
 
-    // Check the last messages.
-    const topics = harness.spoolLastTopic(2)
+    // A DFSP may not change another DFSP's transfer: only the error is sent (no position message), and
+    // the transfer is not aborted.
+    const topics = harness.spoolLastTopic(1)
     Snapshot.from(`[
-      "topic-transfer-position",
       "topic-notification-event"
     ]`).checkUnwrap(topics)
-
-    // Get the transfer:
-    const transfer = await TransferFacade.getById(transferId)
-    assert.equal(transfer.transferState, 'ABORTED_ERROR')
+    const [error] = harness.spoolLast(1)
     assert.equal(
-      transfer.reason, 
+      error.valueParsed.content.payload.errorInformation.errorDescription,
       'Generic validation error - fspiop-source does not match payee fsp on the Fulfil callback response'
     )
+    const transfer = await TransferFacade.getById(transferId)
+    assert.equal(transfer.transferState, 'RESERVED')
   })
 
   it('prepare() + wait times out a transfer.', async () => {

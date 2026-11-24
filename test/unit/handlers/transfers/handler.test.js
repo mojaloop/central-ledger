@@ -1078,10 +1078,13 @@ Test('Transfer handler', transferHandlerTest => {
       // lets check if the first kafka proceed message contains an applicable error
       test.equal(kafkaCallOne.args[2].fspiopError.errorInformation.errorCode, '3100')
       test.equal(kafkaCallOne.args[2].fspiopError.errorInformation.errorDescription, 'Generic validation error - fspiop-destination does not match payer fsp on the Fulfil callback response')
-      test.equal(kafkaCallOne.args[2].eventDetail.functionality, Enum.Events.Event.Type.POSITION)
-      test.equal(kafkaCallOne.args[2].eventDetail.action, Enum.Events.Event.Action.ABORT_VALIDATION)
+      // A DFSP may not change another DFSP's transfer: the error goes to the sender only, and the
+      // transfer is not aborted (no state change, no position message)
+      test.equal(kafkaCallOne.args[2].eventDetail.functionality, Enum.Events.Event.Type.NOTIFICATION)
+      test.equal(kafkaCallOne.args[2].eventDetail.action, Enum.Events.Event.Action.COMMIT)
       test.equal(kafkaCallOne.args[2].fromSwitch, true)
-      test.equal(kafkaCallOne.args[2].messageKey, '0')
+      test.equal(kafkaCallOne.args[2].messageKey, undefined, 'no position message')
+      test.ok(TransferService.handlePayeeResponse.notCalled, 'the transfer state is not changed')
 
       test.end()
     })
@@ -1112,10 +1115,13 @@ Test('Transfer handler', transferHandlerTest => {
       // lets check if the first kafka proceed message contains an applicable error
       test.equal(kafkaCallOne.args[2].fspiopError.errorInformation.errorCode, '3100')
       test.equal(kafkaCallOne.args[2].fspiopError.errorInformation.errorDescription, 'Generic validation error - fspiop-source does not match payee fsp on the Fulfil callback response')
-      test.equal(kafkaCallOne.args[2].eventDetail.functionality, Enum.Events.Event.Type.POSITION)
-      test.equal(kafkaCallOne.args[2].eventDetail.action, Enum.Events.Event.Action.ABORT_VALIDATION)
+      // A DFSP may not change another DFSP's transfer: the error goes to the sender only, and the
+      // transfer is not aborted (no state change, no position message)
+      test.equal(kafkaCallOne.args[2].eventDetail.functionality, Enum.Events.Event.Type.NOTIFICATION)
+      test.equal(kafkaCallOne.args[2].eventDetail.action, Enum.Events.Event.Action.COMMIT)
       test.equal(kafkaCallOne.args[2].fromSwitch, true)
-      test.equal(kafkaCallOne.args[2].messageKey, '0')
+      test.equal(kafkaCallOne.args[2].messageKey, undefined, 'no position message')
+      test.ok(TransferService.handlePayeeResponse.notCalled, 'the transfer state is not changed')
 
       test.end()
     })
@@ -1147,10 +1153,13 @@ Test('Transfer handler', transferHandlerTest => {
       // lets check if the first kafka proceed message contains an applicable error
       test.equal(kafkaCallOne.args[2].fspiopError.errorInformation.errorCode, '3100')
       test.equal(kafkaCallOne.args[2].fspiopError.errorInformation.errorDescription, 'Generic validation error - fspiop-source does not match payee fsp on the Fulfil callback response')
-      test.equal(kafkaCallOne.args[2].eventDetail.functionality, Enum.Events.Event.Type.POSITION)
-      test.equal(kafkaCallOne.args[2].eventDetail.action, Enum.Events.Event.Action.ABORT_VALIDATION)
+      // A DFSP may not change another DFSP's transfer: the error goes to the sender only, and the
+      // transfer is not aborted (no state change, no position message)
+      test.equal(kafkaCallOne.args[2].eventDetail.functionality, Enum.Events.Event.Type.NOTIFICATION)
+      test.equal(kafkaCallOne.args[2].eventDetail.action, Enum.Events.Event.Action.COMMIT)
       test.equal(kafkaCallOne.args[2].fromSwitch, true)
-      test.equal(kafkaCallOne.args[2].messageKey, '0')
+      test.equal(kafkaCallOne.args[2].messageKey, undefined, 'no position message')
+      test.ok(TransferService.handlePayeeResponse.notCalled, 'the transfer state is not changed')
 
       test.end()
     })
@@ -1177,25 +1186,21 @@ Test('Transfer handler', transferHandlerTest => {
       // Assert
 
       test.equal(result, true)
-      test.ok(Kafka.proceed.calledTwice, 'Kafka.proceed was called twice')
+      test.ok(Kafka.proceed.calledOnce, 'Kafka.proceed was called once: no RESERVED_ABORTED notification to the payee')
 
       // fetch kafka proceed arguments
       const kafkaCallOne = Kafka.proceed.getCall(0)
-      const kafkaCallTwo = Kafka.proceed.getCall(1)
 
       // lets check if the first kafka proceed message contains an applicable error
       test.equal(kafkaCallOne.args[2].fspiopError.errorInformation.errorCode, '3100')
       test.equal(kafkaCallOne.args[2].fspiopError.errorInformation.errorDescription, 'Generic validation error - fspiop-destination does not match payer fsp on the Fulfil callback response')
-      test.equal(kafkaCallOne.args[2].eventDetail.functionality, Enum.Events.Event.Type.POSITION)
-      test.equal(kafkaCallOne.args[2].eventDetail.action, Enum.Events.Event.Action.ABORT_VALIDATION)
+      // A DFSP may not change another DFSP's transfer: the error goes to the sender only, and the
+      // transfer is not aborted (no state change, no position message)
+      test.equal(kafkaCallOne.args[2].eventDetail.functionality, Enum.Events.Event.Type.NOTIFICATION)
+      test.equal(kafkaCallOne.args[2].eventDetail.action, Enum.Events.Event.Action.COMMIT)
       test.equal(kafkaCallOne.args[2].fromSwitch, true)
-      test.equal(kafkaCallOne.args[2].messageKey, '0')
-
-      // lets check if the outbound event is sent to the notifications with the correct status
-      test.equal(kafkaCallTwo.args[1].message.value.content.payload.transferState, TransferState.ABORTED)
-      test.equal(kafkaCallTwo.args[2].eventDetail.functionality, Enum.Events.Event.Type.NOTIFICATION)
-      test.equal(kafkaCallTwo.args[2].eventDetail.action, Enum.Events.Event.Action.RESERVED_ABORTED)
-      test.equal(kafkaCallTwo.args[2].fromSwitch, true)
+      test.equal(kafkaCallOne.args[2].messageKey, undefined, 'no position message')
+      test.ok(TransferService.handlePayeeResponse.notCalled, 'the transfer state is not changed')
 
       test.end()
     })
@@ -1221,25 +1226,21 @@ Test('Transfer handler', transferHandlerTest => {
 
       // Assert
       test.equal(result, true)
-      test.ok(Kafka.proceed.calledTwice, 'Kafka.proceed was called twice')
+      test.ok(Kafka.proceed.calledOnce, 'Kafka.proceed was called once: no RESERVED_ABORTED notification to the payee')
 
       // fetch kafka proceed arguments
       const kafkaCallOne = Kafka.proceed.getCall(0)
-      const kafkaCallTwo = Kafka.proceed.getCall(1)
 
       // lets check if the first kafka proceed message contains an applicable error
       test.equal(kafkaCallOne.args[2].fspiopError.errorInformation.errorCode, '3100')
       test.equal(kafkaCallOne.args[2].fspiopError.errorInformation.errorDescription, 'Generic validation error - fspiop-source does not match payee fsp on the Fulfil callback response')
-      test.equal(kafkaCallOne.args[2].eventDetail.functionality, Enum.Events.Event.Type.POSITION)
-      test.equal(kafkaCallOne.args[2].eventDetail.action, Enum.Events.Event.Action.ABORT_VALIDATION)
+      // A DFSP may not change another DFSP's transfer: the error goes to the sender only, and the
+      // transfer is not aborted (no state change, no position message)
+      test.equal(kafkaCallOne.args[2].eventDetail.functionality, Enum.Events.Event.Type.NOTIFICATION)
+      test.equal(kafkaCallOne.args[2].eventDetail.action, Enum.Events.Event.Action.COMMIT)
       test.equal(kafkaCallOne.args[2].fromSwitch, true)
-      test.equal(kafkaCallOne.args[2].messageKey, '0')
-
-      // lets check if the outbound event is sent to the notifications with the correct status
-      test.equal(kafkaCallTwo.args[1].message.value.content.payload.transferState, TransferState.ABORTED)
-      test.equal(kafkaCallTwo.args[2].eventDetail.functionality, Enum.Events.Event.Type.NOTIFICATION)
-      test.equal(kafkaCallTwo.args[2].eventDetail.action, Enum.Events.Event.Action.RESERVED_ABORTED)
-      test.equal(kafkaCallTwo.args[2].fromSwitch, true)
+      test.equal(kafkaCallOne.args[2].messageKey, undefined, 'no position message')
+      test.ok(TransferService.handlePayeeResponse.notCalled, 'the transfer state is not changed')
 
       test.end()
     })
@@ -1270,52 +1271,52 @@ Test('Transfer handler', transferHandlerTest => {
       test.end()
     })
 
-    fulfilTest.test('fail validation when fulfilment is undefined and state is COMMITED', async (test) => {
-      const localfulfilMessages = MainUtil.clone(fulfilMessages)
-      await Consumer.createHandler(topicName, config, command)
-      Kafka.transformGeneralTopicName.returns(topicName)
-      TransferService.getById.returns(Promise.resolve({
-        condition: 'condition',
-        payeeFsp: 'dfsp2',
-        payerFsp: 'dfsp1'
-      }))
-      TransferService.handlePayeeResponse.returns(Promise.resolve({
-        completedTimestamp: '2018-10-24T08:38:08.699-04:00'
-      }))
-      localfulfilMessages[0].value.content.headers['fspiop-source'] = 'dfsp2'
-      localfulfilMessages[0].value.content.headers['fspiop-destination'] = 'dfsp1'
-      localfulfilMessages[0].value.content.payload.fulfilment = undefined
-      Cyril.processAbortMessage.returns({
-        isFx: false,
-        positionChanges: [{
-          participantCurrencyId: 1
-        }]
+    // An invalid fulfilment aborts the transfer, so the state and expiry checks must come first: a transfer
+    // that is already final or expired gets the state error, sent to the sender only, and is never aborted
+    // again (no state write, no ABORT_VALIDATION position message).
+    for (const transferState of [TransferState.COMMITTED, TransferInternalState.ABORTED_ERROR, TransferInternalState.EXPIRED_RESERVED]) {
+      fulfilTest.test(`reject an invalid fulfilment for a ${transferState} transfer without aborting it`, async (test) => {
+        const localfulfilMessages = MainUtil.clone(fulfilMessages)
+        await Consumer.createHandler(topicName, config, command)
+        Kafka.transformGeneralTopicName.returns(topicName)
+        TransferService.getById.returns(Promise.resolve({
+          condition: 'condition',
+          payeeFsp: 'dfsp2',
+          payerFsp: 'dfsp1',
+          transferState
+        }))
+        localfulfilMessages[0].value.content.headers['fspiop-source'] = 'dfsp2'
+        localfulfilMessages[0].value.content.headers['fspiop-destination'] = 'dfsp1'
+        localfulfilMessages[0].value.content.payload.fulfilment = undefined
+        Kafka.proceed.returns(true)
+        Comparators.duplicateCheckComparator.withArgs(transfer.transferId, localfulfilMessages[0].value.content.payload).returns(Promise.resolve({
+          hasDuplicateId: false,
+          hasDuplicateHash: false
+        }))
+
+        const result = await allTransferHandlers.fulfil(null, localfulfilMessages)
+
+        test.equal(result, true)
+        test.ok(Kafka.proceed.calledOnce, 'one message: the error to the sender')
+        const { fspiopError, eventDetail, fromSwitch, messageKey } = Kafka.proceed.getCall(0).args[2]
+        test.equal(fspiopError.errorInformation.errorCode, '3100')
+        test.equal(fspiopError.errorInformation.errorDescription, 'Generic validation error - non-RESERVED transfer state')
+        test.equal(eventDetail.functionality, Enum.Events.Event.Type.NOTIFICATION)
+        test.equal(eventDetail.action, Enum.Events.Event.Action.COMMIT)
+        test.equal(fromSwitch, true, 'sent back to the sender')
+        test.equal(messageKey, undefined, 'no position message')
+        test.ok(TransferService.handlePayeeResponse.notCalled, 'the transfer state is not changed')
+        test.ok(Cyril.processAbortMessage.notCalled, 'no abort is built')
+        test.end()
       })
+    }
 
-      TransferService.getTransferDuplicateCheck.returns(Promise.resolve(null))
-      TransferService.saveTransferDuplicateCheck.returns(Promise.resolve(null))
-      Comparators.duplicateCheckComparator.withArgs(transfer.transferId, localfulfilMessages[0].value.content.payload).returns(Promise.resolve({
-        hasDuplicateId: false,
-        hasDuplicateHash: false
-      }))
-
-      const result = await allTransferHandlers.fulfil(null, localfulfilMessages)
-      const firstCall = SpanStub.finish.getCall(0)
-
-      test.equal(firstCall.args[0], 'invalid fulfilment')
-      test.equal(firstCall.args[1].status, EventSdk.EventStatusType.failed)
-      test.equal(firstCall.args[1].code, '3100')
-      test.equal(firstCall.args[1].description, 'Generic validation error')
-      test.equal(result, true)
-
-      test.end()
-    })
-
-    fulfilTest.test('fail validation when fulfilment is undefined and state is RESERVE', async (test) => {
+    fulfilTest.test('reject an invalid fulfilment on RESERVE for an aborted transfer without aborting it again', async (test) => {
       const localfulfilMessages = MainUtil.clone(fulfilMessages)
       await Consumer.createHandler(topicName, config, command)
       Kafka.transformGeneralTopicName.returns(topicName)
       TransferService.getById.returns(Promise.resolve({
+        transferId: transfer.transferId,
         condition: 'condition',
         payeeFsp: 'dfsp2',
         payerFsp: 'dfsp1',
@@ -1323,14 +1324,45 @@ Test('Transfer handler', transferHandlerTest => {
         transferState: TransferInternalState.ABORTED_ERROR,
         transferStateEnumeration: TransferState.ABORTED
       }))
+      localfulfilMessages[0].value.content.headers['fspiop-source'] = 'dfsp2'
+      localfulfilMessages[0].value.content.headers['fspiop-destination'] = 'dfsp1'
+      localfulfilMessages[0].value.content.payload.fulfilment = undefined
+      localfulfilMessages[0].value.content.payload.transferState = TransferState.RESERVED
+      localfulfilMessages[0].value.metadata.event.action = Enum.Events.Event.Action.RESERVE
+      Kafka.proceed.returns(true)
+      Comparators.duplicateCheckComparator.withArgs(transfer.transferId, localfulfilMessages[0].value.content.payload).returns(Promise.resolve({
+        hasDuplicateId: false,
+        hasDuplicateHash: false
+      }))
+
+      const result = await allTransferHandlers.fulfil(null, localfulfilMessages)
+
+      test.equal(result, true)
+      const calls = Kafka.proceed.getCalls().map(call => call.args[2])
+      test.equal(calls[0].fspiopError.errorInformation.errorDescription, 'Generic validation error - non-RESERVED transfer state', 'the state error to the sender')
+      test.equal(calls[0].eventDetail.action, Enum.Events.Event.Action.COMMIT)
+      test.equal(calls[1]?.eventDetail.action, Enum.Events.Event.Action.RESERVED_ABORTED, 'the existing RESERVED_ABORTED notice for RESERVE')
+      test.ok(calls.every(call => call.eventDetail.functionality !== Enum.Events.Event.Type.POSITION), 'no position message')
+      test.ok(TransferService.handlePayeeResponse.notCalled, 'the transfer state is not changed')
+      test.end()
+    })
+
+    fulfilTest.test('abort a RESERVED transfer whose fulfilment is invalid, as before', async (test) => {
+      const localfulfilMessages = MainUtil.clone(fulfilMessages)
+      await Consumer.createHandler(topicName, config, command)
+      Kafka.transformGeneralTopicName.returns(topicName)
+      TransferService.getById.returns(Promise.resolve({
+        condition: 'condition',
+        payeeFsp: 'dfsp2',
+        payerFsp: 'dfsp1',
+        transferState: TransferInternalState.RESERVED
+      }))
       TransferService.handlePayeeResponse.returns(Promise.resolve({
         completedTimestamp: '2018-10-24T08:38:08.699-04:00'
       }))
       localfulfilMessages[0].value.content.headers['fspiop-source'] = 'dfsp2'
       localfulfilMessages[0].value.content.headers['fspiop-destination'] = 'dfsp1'
       localfulfilMessages[0].value.content.payload.fulfilment = undefined
-      localfulfilMessages[0].value.content.payload.transferState = TransferState.RESERVED
-      localfulfilMessages[0].value.metadata.event.action = Enum.Events.Event.Action.RESERVE
       Cyril.processAbortMessage.returns({
         isFx: false,
         positionChanges: [{
@@ -1338,22 +1370,21 @@ Test('Transfer handler', transferHandlerTest => {
         }]
       })
       Kafka.proceed.returns(true)
-
-      TransferService.getTransferDuplicateCheck.returns(Promise.resolve(null))
-      TransferService.saveTransferDuplicateCheck.returns(Promise.resolve(null))
       Comparators.duplicateCheckComparator.withArgs(transfer.transferId, localfulfilMessages[0].value.content.payload).returns(Promise.resolve({
         hasDuplicateId: false,
         hasDuplicateHash: false
       }))
 
       const result = await allTransferHandlers.fulfil(null, localfulfilMessages)
-      const kafkaCallOne = Kafka.proceed.getCall(0)
-      console.log(kafkaCallOne.args[2])
 
-      test.equal(kafkaCallOne.args[2].eventDetail.functionality, Enum.Events.Event.Type.POSITION)
-      test.equal(kafkaCallOne.args[2].eventDetail.action, Enum.Events.Event.Action.ABORT_VALIDATION)
       test.equal(result, true)
-
+      test.ok(TransferService.handlePayeeResponse.calledWith(Sinon.match.any, Sinon.match.any, Enum.Events.Event.Action.ABORT_VALIDATION), 'RECEIVED_ERROR is recorded')
+      const { eventDetail, messageKey } = Kafka.proceed.getCall(0).args[2]
+      test.equal(eventDetail.functionality, Enum.Events.Event.Type.POSITION)
+      test.equal(eventDetail.action, Enum.Events.Event.Action.ABORT_VALIDATION, 'the abort goes to the position handler')
+      test.equal(messageKey, '1')
+      const finish = SpanStub.finish.getCall(0)
+      test.equal(finish.args[0], 'invalid fulfilment')
       test.end()
     })
 

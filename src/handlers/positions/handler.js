@@ -56,6 +56,8 @@ const { randomUUID } = require('crypto')
 const decodePayload = require('@mojaloop/central-services-shared').Util.StreamingProtocol.decodePayload
 const decodeMessages = require('@mojaloop/central-services-shared').Util.StreamingProtocol.decodeMessages
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
+const StateRules = require('../../domain/position/stateRules')
+const { countSkippedMessage } = require('../../domain/position/skippedMessage')
 
 const location = { module: 'PositionHandler', method: '', path: '' } // var object used as pointer
 const rethrow = require('../../shared/rethrow')
@@ -200,8 +202,22 @@ const positions = async (error, messages) => {
       Logger.isInfoEnabled && Logger.info(Utility.breadcrumb(location, { path: action }))
       const transferInfo = await TransferService.getTransferInfoToChangePosition(transferId, Enum.Accounts.TransferParticipantRoleType.PAYER_DFSP, Enum.Accounts.LedgerEntryType.PRINCIPLE_VALUE)
       const participantCurrency = await participantFacade.getByIDAndCurrency(transferInfo.participantId, transferInfo.currencyId, Enum.Accounts.LedgerAccountType.POSITION)
-      let transferStateId
 
+      // Release the payer's reservation only for the payee's reject or error that the fulfil handler has
+      // just recorded. In any other state (already released, committed, timed out) change nothing and
+      // send nothing.
+      const expectedState = action === Enum.Events.Event.Action.REJECT
+        ? Enum.Transfers.TransferInternalState.RECEIVED_REJECT
+        : Enum.Transfers.TransferInternalState.RECEIVED_ERROR
+      if (transferInfo.transferStateId !== expectedState) {
+        Logger.isInfoEnabled && Logger.info(Utility.breadcrumb(location, `skipped::notExpectedState--${actionLetter}5`))
+        countSkippedMessage(action, transferId, StateRules.classify(action, transferInfo.transferStateId), transferInfo.transferStateId)
+        await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, hubName: Config.HUB_NAME })
+        histTimerEnd({ success: true, fspId: Config.INSTRUMENTATION_METRICS_LABELS.fspId, action })
+        return true
+      }
+
+      let transferStateId
       if (action === Enum.Events.Event.Action.REJECT) {
         Logger.isInfoEnabled && Logger.info(Utility.breadcrumb(location, `receivedReject--${actionLetter}5`))
         transferStateId = Enum.Transfers.TransferInternalState.ABORTED_REJECTED

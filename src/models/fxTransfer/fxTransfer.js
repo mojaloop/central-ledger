@@ -419,6 +419,16 @@ const savePreparedRequest = async (
   }
 }
 
+// States in which an FXP's response may still decide an fxTransfer. A fulfil only while it waits for
+// one; any other response (an error) also once the FXP has fulfilled it (RECEIVED_FULFIL_DEPENDENT).
+const fxFulfilResponseAcceptedStates = (action) => {
+  const states = [TransferInternalState.RESERVED, TransferInternalState.RESERVED_FORWARDED]
+  if (action !== TransferEventAction.FX_COMMIT && action !== TransferEventAction.FX_RESERVE) {
+    states.push(TransferInternalState.RECEIVED_FULFIL_DEPENDENT)
+  }
+  return states
+}
+
 const saveFxFulfilResponse = async (commitRequestId, payload, action, fspiopError) => {
   const histTimerSaveFulfilResponseEnd = Metrics.getHistogram(
     'fx_model_transfer',
@@ -498,6 +508,17 @@ const saveFxFulfilResponse = async (commitRequestId, payload, action, fspiopErro
     ).startTimer()
 
     await knex.transaction(async (trx) => {
+      // The FXP's response may only decide an fxTransfer that is still reserved; an error may also abort
+      // one the FXP has already fulfilled. The fx fulfil handler checks this first; this guard stops any
+      // other path from overwriting a final state.
+      const latestState = await knex('fxTransferStateChange').transacting(trx)
+        .where({ commitRequestId })
+        .orderBy('fxTransferStateChangeId', 'desc')
+        .first('transferStateId')
+      if (!fxFulfilResponseAcceptedStates(action).includes(latestState?.transferStateId)) {
+        logger.error('saveFxFulfilResponse::fxTransfer not in a state that accepts an FXP response, nothing written', { commitRequestId, action, state: latestState?.transferStateId })
+        throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR, 'non-RESERVED fxTransfer state')
+      }
       try {
         if (!fspiopError && [TransferEventAction.FX_COMMIT, TransferEventAction.FX_RESERVE].includes(action)) {
           const res = await Db.from('settlementWindow').query(builder => {

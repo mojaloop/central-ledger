@@ -79,7 +79,7 @@ class FxFulfilService {
     return fxTransfer
   }
 
-  async validateHeaders({ transfer, headers, payload }) {
+  async validateHeaders({ transfer, headers, functionality }) {
     let fspiopError = null
 
     if (!transfer.counterPartyFspIsProxy && (headers[SOURCE]?.toLowerCase() !== transfer.counterPartyFspName.toLowerCase())) {
@@ -92,15 +92,19 @@ class FxFulfilService {
     if (fspiopError) {
       const apiFSPIOPError = fspiopError.toApiErrorObject(this.Config.ERROR_HANDLING)
       const eventDetail = {
-        functionality: Type.POSITION,
-        action: Action.FX_ABORT_VALIDATION
+        functionality,
+        action: Action.FX_RESERVE
       }
       this.log.warn('headers validation error', { eventDetail, apiFSPIOPError })
 
-      // Lets handle the abort validation and change the fxTransfer state to reflect this
-      await this.FxTransferModel.fxTransfer.saveFxFulfilResponse(transfer.commitRequestId, payload, eventDetail.action, apiFSPIOPError)
-
-      await this._handleAbortValidation(transfer, apiFSPIOPError, eventDetail)
+      // A DFSP may not change another DFSP's fxTransfer. Reject the callback to its sender only: the
+      // fxTransfer, its positions and the other parties are left as they are.
+      await this.kafkaProceed({
+        consumerCommit,
+        fspiopError: apiFSPIOPError,
+        eventDetail,
+        fromSwitch
+      })
       rethrow.rethrowAndCountFspiopError(fspiopError, { operation: 'validateHeaders' })
     }
   }
@@ -257,11 +261,15 @@ class FxFulfilService {
     return isValid
   }
 
-  async validateTransferState(transfer, functionality) {
-    if (transfer.transferState !== TransferInternalState.RESERVED &&
-        transfer.transferState !== TransferInternalState.RESERVED_FORWARDED &&
-        transfer.transferState !== TransferInternalState.RECEIVED_FULFIL_DEPENDENT // for the case where we need to abort an fx transfer whose actual transfer is rejected/aborted by payee
-    ) {
+  async validateTransferState(transfer, functionality, action) {
+    // A fulfil is accepted only while the fxTransfer waits for one. The error callback can also abort an
+    // fxTransfer the FXP has already fulfilled (RECEIVED_FULFIL_DEPENDENT), for the case where its
+    // transfer is rejected or aborted by the payee.
+    const acceptedStates = [TransferInternalState.RESERVED, TransferInternalState.RESERVED_FORWARDED]
+    if (action !== Action.FX_COMMIT && action !== Action.FX_RESERVE) {
+      acceptedStates.push(TransferInternalState.RECEIVED_FULFIL_DEPENDENT)
+    }
+    if (!acceptedStates.includes(transfer.transferState)) {
       const fspiopError = fspiopErrorFactory.fxTransferNonReservedState()
       const apiFSPIOPError = fspiopError.toApiErrorObject(this.Config.ERROR_HANDLING)
       const eventDetail = {
