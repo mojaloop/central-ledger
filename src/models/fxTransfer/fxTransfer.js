@@ -419,6 +419,13 @@ const savePreparedRequest = async (
   }
 }
 
+// States in which an FXP's response may still decide an fxTransfer. Any response only while it waits for
+// one; the error callback (FX_ABORT) also once the FXP has fulfilled it (RECEIVED_FULFIL_DEPENDENT).
+const FX_RESPONSE_ACCEPTED_STATES = new Set([TransferInternalState.RESERVED, TransferInternalState.RESERVED_FORWARDED])
+const FX_ABORT_ACCEPTED_STATES = new Set([...FX_RESPONSE_ACCEPTED_STATES, TransferInternalState.RECEIVED_FULFIL_DEPENDENT])
+const fxFulfilResponseAcceptedStates = (action) =>
+  action === TransferEventAction.FX_ABORT ? FX_ABORT_ACCEPTED_STATES : FX_RESPONSE_ACCEPTED_STATES
+
 const saveFxFulfilResponse = async (commitRequestId, payload, action, fspiopError) => {
   const histTimerSaveFulfilResponseEnd = Metrics.getHistogram(
     'fx_model_transfer',
@@ -498,6 +505,18 @@ const saveFxFulfilResponse = async (commitRequestId, payload, action, fspiopErro
     ).startTimer()
 
     await knex.transaction(async (trx) => {
+      // The FXP's response may only decide an fxTransfer that is still reserved; an error may also abort
+      // one the FXP has already fulfilled. The fx fulfil handler checks this first; this guard stops any
+      // other path from overwriting a state that was already committed. It is a plain read, not a lock,
+      // so it does not serialize concurrent writers of the same fxTransfer.
+      const latestState = await knex('fxTransferStateChange').transacting(trx)
+        .where({ commitRequestId })
+        .orderBy('fxTransferStateChangeId', 'desc')
+        .first('transferStateId')
+      if (!fxFulfilResponseAcceptedStates(action).has(latestState?.transferStateId)) {
+        logger.error('saveFxFulfilResponse::fxTransfer not in a state that accepts an FXP response, nothing written', { commitRequestId, action, state: latestState?.transferStateId })
+        throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR, 'non-RESERVED fxTransfer state')
+      }
       try {
         if (!fspiopError && [TransferEventAction.FX_COMMIT, TransferEventAction.FX_RESERVE].includes(action)) {
           const res = await Db.from('settlementWindow').query(builder => {

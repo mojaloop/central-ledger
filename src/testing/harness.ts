@@ -952,8 +952,11 @@ class MySql {
       -e MARIADB_ROOT_PASSWORD=password \
       -e MARIADB_DATABASE=${this.options.databaseName} \
       -p ${port}:3306 \
-      mariadb:latest
+      mariadb:latest \
+      --transaction-isolation=READ-COMMITTED
     `.replace(/\s/g, ' ')
+    // Mojaloop deployments must run at READ COMMITTED, so the tests run at that level too. MariaDB
+    // defaults to REPEATABLE READ, whose gap locks hide races that can happen in production.
     await execAsync(command)
 
     this.logger.info(`MySql starting at localhost:${port}`);

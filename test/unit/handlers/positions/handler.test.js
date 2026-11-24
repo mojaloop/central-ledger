@@ -552,6 +552,57 @@ Test('Position handler', transferHandlerTest => {
       test.end()
     })
 
+    // The payer's reservation is released only for the reject or error the fulfil handler has just recorded.
+    // In any other state the message changes nothing and sends nothing: only its offset is committed.
+    for (const { action, transferStateId } of [
+      { action: transferEventAction.ABORT, transferStateId: TransferState.COMMITTED },
+      { action: transferEventAction.ABORT_VALIDATION, transferStateId: TransferState.COMMITTED },
+      { action: transferEventAction.ABORT, transferStateId: TransferInternalState.ABORTED_ERROR },
+      { action: transferEventAction.ABORT_VALIDATION, transferStateId: TransferInternalState.EXPIRED_RESERVED },
+      { action: transferEventAction.BULK_ABORT, transferStateId: TransferState.COMMITTED },
+      { action: transferEventAction.REJECT, transferStateId: TransferInternalState.ABORTED_REJECTED },
+      { action: transferEventAction.REJECT, transferStateId: TransferInternalState.RECEIVED_ERROR }
+    ]) {
+      positionsTest.test(`skip ${action} for a transfer in ${transferStateId} without releasing the payer`, async (test) => {
+        await Consumer.createHandler(topicName, config, command)
+        Kafka.transformGeneralTopicName.returns(topicName)
+        Kafka.getKafkaConfig.returns(config)
+        const m = Object.assign({}, MainUtil.clone(messages[1]))
+        TransferService.getTransferInfoToChangePosition.withArgs(m.value.content.uriParams.id, Enum.Accounts.TransferParticipantRoleType.PAYER_DFSP, Enum.Accounts.LedgerEntryType.PRINCIPLE_VALUE)
+          .returns(Object.assign({}, transferInfo, { transferStateId }))
+        m.value.metadata.event.action = action
+        Kafka.proceed.returns(true)
+
+        const result = await allTransferHandlers.positions(null, m)
+
+        test.equal(result, true)
+        test.ok(PositionService.changeParticipantPosition.notCalled, 'no position change')
+        test.ok(Kafka.proceed.calledOnce, 'one call: the offset commit')
+        test.equal(Kafka.proceed.getCall(0).args[2].consumerCommit, true, 'the offset is committed')
+        test.equal(Kafka.proceed.getCall(0).args[2].eventDetail, undefined, 'nothing is sent')
+        test.end()
+      })
+    }
+
+    positionsTest.test('release the payer for abort-validation when the transfer is received-error', async (test) => {
+      await Consumer.createHandler(topicName, config, command)
+      Kafka.transformGeneralTopicName.returns(topicName)
+      Kafka.getKafkaConfig.returns(config)
+      const m = Object.assign({}, MainUtil.clone(messages[1]))
+      TransferService.getTransferInfoToChangePosition.withArgs(m.value.content.uriParams.id, Enum.Accounts.TransferParticipantRoleType.PAYER_DFSP, Enum.Accounts.LedgerEntryType.PRINCIPLE_VALUE)
+        .returns(Object.assign({}, transferInfo, { transferStateId: TransferInternalState.RECEIVED_ERROR }))
+      ParticipantFacade.getByIDAndCurrency.resolves({ participantCurrencyId: 1 })
+      m.value.metadata.event.action = transferEventAction.ABORT_VALIDATION
+      Kafka.proceed.returns(true)
+
+      const result = await allTransferHandlers.positions(null, m)
+
+      test.equal(result, true)
+      test.ok(PositionService.changeParticipantPosition.calledOnce, 'the reservation is released')
+      test.equal(PositionService.changeParticipantPosition.getCall(0).args[3].transferStateId, TransferInternalState.ABORTED_ERROR)
+      test.end()
+    })
+
     positionsTest.test('update transferStateChange for reject and transferStateId is received-reject when single message', async (test) => {
       const isIncrease = false
       const transferStateChange = {

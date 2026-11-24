@@ -234,59 +234,10 @@ const processFulfilMessage = async (message, functionality, span) => {
 
       const apiFSPIOPError = fspiopError.toApiErrorObject(Config.ERROR_HANDLING)
 
-      // Lets handle the abort validation and change the transfer state to reflect this
-      const transferAbortResult = await TransferService.handlePayeeResponse(transferId, payload, TransferEventAction.ABORT_VALIDATION, apiFSPIOPError)
-
-      /**
-       * TODO: BULK-Handle at BulkProcessingHandler (not in scope of #967)
-       * HOWTO: For regular transfers, send the fulfil from non-payee dfsp.
-       * Not sure if it will apply to bulk, as it could/should be captured
-       * at BulkPrepareHander. To be verified as part of future story.
-       */
-
-      // Set the event details to map to an ABORT_VALIDATION event targeted to the Position Handler
-      const eventDetail = {
-        functionality: TransferEventType.POSITION,
-        action: TransferEventAction.ABORT_VALIDATION
-      }
-
-      // Key position abort with payer account id
-      const payerAccount = await Participant.getAccountByNameAndCurrency(transfer.payerFsp, transfer.currency, Enum.Accounts.LedgerAccountType.POSITION)
-
-      // Publish message to Position Handler
-      await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: apiFSPIOPError, eventDetail, fromSwitch, toDestination: transfer.payerFsp, messageKey: payerAccount.participantCurrencyId.toString(), hubName: Config.HUB_NAME })
-
-      /**
-       * Send patch notification callback to original payee fsp if they asked for a patch response.
-       */
-      if (action === TransferEventAction.RESERVE) {
-        Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackReservedAborted--${actionLetter}3`))
-
-        // Set the event details to map to an RESERVE_ABORTED event targeted to the Notification Handler
-        const reserveAbortedEventDetail = { functionality: TransferEventType.NOTIFICATION, action: TransferEventAction.RESERVED_ABORTED }
-
-        // Extract error information
-        const errorCode = apiFSPIOPError?.errorInformation?.errorCode
-        const errorDescription = apiFSPIOPError?.errorInformation?.errorDescription
-
-        // TODO: This should be handled by a PATCH /transfers/{id}/error callback in the future FSPIOP v1.2 specification, and instead we should just send the FSPIOP-Error instead!
-        // Ref: https://github.com/mojaloop/mojaloop-specification/issues/106.
-        const reservedAbortedPayload = {
-          transferId: transferAbortResult?.id,
-          completedTimestamp: transferAbortResult?.completedTimestamp && (new Date(Date.parse(transferAbortResult.completedTimestamp))).toISOString(),
-          transferState: TransferState.ABORTED,
-          extensionList: { // lets add the extension list to handle the limitation of the FSPIOP v1.1 specification by adding the error cause...
-            extension: [
-              {
-                key: 'cause',
-                value: `${errorCode}: ${errorDescription}`
-              }
-            ]
-          }
-        }
-        message.value.content.payload = reservedAbortedPayload
-        await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, eventDetail: reserveAbortedEventDetail, fromSwitch: true, toDestination: transfer.payeeFsp, hubName: Config.HUB_NAME })
-      }
+      // A DFSP may not change another DFSP's transfer. Reject the callback to its sender only: the
+      // transfer, its positions and the other parties are left as they are.
+      const eventDetail = { functionality, action: TransferEventAction.COMMIT }
+      await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: apiFSPIOPError, eventDetail, fromSwitch, hubName: Config.HUB_NAME })
 
       rethrow.rethrowAndCountFspiopError(apiFSPIOPError, { operation: 'processFulfilMessage' })
     }
@@ -412,6 +363,65 @@ const processFulfilMessage = async (message, functionality, span) => {
     rethrow.rethrowAndCountFspiopError(fspiopError, { operation: 'processFulfilMessage' })
   }
 
+  // Check the transfer can still be decided before anything below writes to it: an invalid
+  // fulfilment aborts the transfer, so it must never reach a transfer that is already final or expired.
+  if (transfer.transferState !== Enum.Transfers.TransferInternalState.RESERVED &&
+      transfer.transferState !== Enum.Transfers.TransferInternalState.RESERVED_FORWARDED
+  ) {
+    Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackErrorNonReservedState--${actionLetter}10`))
+    const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR, 'non-RESERVED transfer state')
+    const eventDetail = { functionality, action: TransferEventAction.COMMIT }
+    /**
+     * TODO: BulkProcessingHandler (not in scope of #967)
+     */
+    await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch, hubName: Config.HUB_NAME })
+
+    // emit an extra message -  RESERVED_ABORTED if action === TransferEventAction.RESERVE
+    if (action === TransferEventAction.RESERVE) {
+      // Get the updated transfer now that completedTimestamp will be different
+      const transferAborted = await TransferService.getById(transferId)
+      Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackReservedAborted--${actionLetter}2`))
+      const eventDetail = { functionality: TransferEventType.NOTIFICATION, action: TransferEventAction.RESERVED_ABORTED }
+      const reservedAbortedPayload = {
+        transferId: transferAborted.id,
+        completedTimestamp: Util.Time.getUTCString(new Date(transferAborted.completedTimestamp)), // TODO: remove this once it can be tested
+        transferState: TransferState.ABORTED
+      }
+      message.value.content.payload = reservedAbortedPayload
+      await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, eventDetail, fromSwitch: true, toDestination: transfer.payeeFsp, hubName: Config.HUB_NAME })
+    }
+    rethrow.rethrowAndCountFspiopError(fspiopError, { operation: 'processFulfilMessage' })
+  }
+
+  // Check if the transfer has expired
+  // For interscheme we ignore expiration for forwarded transfers
+  if (transfer.transferState !== Enum.Transfers.TransferInternalState.RESERVED_FORWARDED &&
+      transfer.expirationDate <= new Date(Util.Time.getUTCString(new Date()))) {
+    Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackErrorTransferExpired--${actionLetter}11`))
+    const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.TRANSFER_EXPIRED)
+    const eventDetail = { functionality, action: TransferEventAction.COMMIT }
+    /**
+     * TODO: BulkProcessingHandler (not in scope of #967)
+     */
+    await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch, hubName: Config.HUB_NAME })
+
+    // emit an extra message -  RESERVED_ABORTED if action === TransferEventAction.RESERVE
+    if (action === TransferEventAction.RESERVE) {
+      // Get the updated transfer now that completedTimestamp will be different
+      const transferAborted = await TransferService.getById(transferId)
+      Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackReservedAborted--${actionLetter}3`))
+      const eventDetail = { functionality: TransferEventType.NOTIFICATION, action: TransferEventAction.RESERVED_ABORTED }
+      const reservedAbortedPayload = {
+        transferId: transferAborted.id,
+        completedTimestamp: Util.Time.getUTCString(new Date(transferAborted.completedTimestamp)),
+        transferState: TransferState.ABORTED
+      }
+      message.value.content.payload = reservedAbortedPayload
+      await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, eventDetail, fromSwitch: true, hubName: Config.HUB_NAME })
+    }
+    rethrow.rethrowAndCountFspiopError(fspiopError, { operation: 'processFulfilMessage' })
+  }
+
   Util.breadcrumb(location, { path: 'validationCheck' })
   // Skip fulfilment validation for actions that use errorInformation instead of fulfilment
   const actionsSkippingFulfilmentValidation = [
@@ -499,63 +509,6 @@ const processFulfilMessage = async (message, functionality, span) => {
       }
       message.value.content.payload = reservedAbortedPayload
       await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, eventDetail, fromSwitch: true, toDestination: transfer.payeeFsp, hubName: Config.HUB_NAME })
-    }
-    rethrow.rethrowAndCountFspiopError(fspiopError, { operation: 'processFulfilMessage' })
-  }
-
-  if (transfer.transferState !== Enum.Transfers.TransferInternalState.RESERVED &&
-      transfer.transferState !== Enum.Transfers.TransferInternalState.RESERVED_FORWARDED
-  ) {
-    Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackErrorNonReservedState--${actionLetter}10`))
-    const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR, 'non-RESERVED transfer state')
-    const eventDetail = { functionality, action: TransferEventAction.COMMIT }
-    /**
-     * TODO: BulkProcessingHandler (not in scope of #967)
-     */
-    await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch, hubName: Config.HUB_NAME })
-
-    // emit an extra message -  RESERVED_ABORTED if action === TransferEventAction.RESERVE
-    if (action === TransferEventAction.RESERVE) {
-      // Get the updated transfer now that completedTimestamp will be different
-      const transferAborted = await TransferService.getById(transferId)
-      Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackReservedAborted--${actionLetter}2`))
-      const eventDetail = { functionality: TransferEventType.NOTIFICATION, action: TransferEventAction.RESERVED_ABORTED }
-      const reservedAbortedPayload = {
-        transferId: transferAborted.id,
-        completedTimestamp: Util.Time.getUTCString(new Date(transferAborted.completedTimestamp)), // TODO: remove this once it can be tested
-        transferState: TransferState.ABORTED
-      }
-      message.value.content.payload = reservedAbortedPayload
-      await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, eventDetail, fromSwitch: true, toDestination: transfer.payeeFsp, hubName: Config.HUB_NAME })
-    }
-    rethrow.rethrowAndCountFspiopError(fspiopError, { operation: 'processFulfilMessage' })
-  }
-
-  // Check if the transfer has expired
-  // For interscheme we ignore expiration for forwarded transfers
-  if (transfer.transferState !== Enum.Transfers.TransferInternalState.RESERVED_FORWARDED &&
-      transfer.expirationDate <= new Date(Util.Time.getUTCString(new Date()))) {
-    Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackErrorTransferExpired--${actionLetter}11`))
-    const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.TRANSFER_EXPIRED)
-    const eventDetail = { functionality, action: TransferEventAction.COMMIT }
-    /**
-     * TODO: BulkProcessingHandler (not in scope of #967)
-     */
-    await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch, hubName: Config.HUB_NAME })
-
-    // emit an extra message -  RESERVED_ABORTED if action === TransferEventAction.RESERVE
-    if (action === TransferEventAction.RESERVE) {
-      // Get the updated transfer now that completedTimestamp will be different
-      const transferAborted = await TransferService.getById(transferId)
-      Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, `callbackReservedAborted--${actionLetter}3`))
-      const eventDetail = { functionality: TransferEventType.NOTIFICATION, action: TransferEventAction.RESERVED_ABORTED }
-      const reservedAbortedPayload = {
-        transferId: transferAborted.id,
-        completedTimestamp: Util.Time.getUTCString(new Date(transferAborted.completedTimestamp)),
-        transferState: TransferState.ABORTED
-      }
-      message.value.content.payload = reservedAbortedPayload
-      await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, eventDetail, fromSwitch: true, hubName: Config.HUB_NAME })
     }
     rethrow.rethrowAndCountFspiopError(fspiopError, { operation: 'processFulfilMessage' })
   }
@@ -731,7 +684,7 @@ const processFxFulfilMessage = async (message, functionality, span) => {
   }
 
   const transfer = await fxFulfilService.getFxTransferDetails(commitRequestId, functionality)
-  await fxFulfilService.validateHeaders({ transfer, headers, payload })
+  await fxFulfilService.validateHeaders({ transfer, headers, functionality })
 
   // If execution continues after this point we are sure fxTransfer exists and source matches payee fsp
   const histTimerDuplicateCheckEnd = Metrics.getHistogram(
@@ -752,9 +705,11 @@ const processFxFulfilMessage = async (message, functionality, span) => {
 
   // Transfer is not a duplicate, or message hasn't been changed.
 
-  payload.fulfilment && await fxFulfilService.validateFulfilment(transfer, payload)
-  await fxFulfilService.validateTransferState(transfer, functionality)
+  // Check the fxTransfer can still be decided before validating the fulfilment: an invalid fulfilment
+  // aborts the fxTransfer, so it must never reach one that is already final or expired.
+  await fxFulfilService.validateTransferState(transfer, functionality, action)
   await fxFulfilService.validateExpirationDate(transfer, functionality)
+  payload.fulfilment && await fxFulfilService.validateFulfilment(transfer, payload)
 
   log.info('Validations Succeeded - process the fxFulfil...')
 
