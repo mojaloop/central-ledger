@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [20.5.2](https://github.com/mojaloop/central-ledger/compare/v20.5.1...v20.5.2) (2026-11-24)
+
+
+### Bug Fixes
+
+* only the payee can decide a transfer, and only while it is reserved ([#1321](https://github.com/mojaloop/central-ledger/issues/1321)) ([bc84fec](https://github.com/mojaloop/central-ledger/commit/bc84fec976f8086dbfb3ea4e45ce1f0275074ce7))
+
+
+### Chore
+
+* **sbom:** update sbom [skip ci] ([54e7dfe](https://github.com/mojaloop/central-ledger/commit/54e7dfe504f2d4147ddc2009889840fd9e50bec9))
+
 ### [20.5.1](https://github.com/mojaloop/central-ledger/compare/v20.5.0...v20.5.1) (2026-11-20)
 
 
