@@ -271,7 +271,7 @@ const getTransferInfoToChangePosition = async (id, transferParticipantRoleTypeId
 }
 
 // States in which a payee's response (fulfil, reject or error) may still decide a transfer.
-const PAYEE_RESPONSE_ACCEPTED_STATES = [TransferInternalState.RESERVED, TransferInternalState.RESERVED_FORWARDED]
+const PAYEE_RESPONSE_ACCEPTED_STATES = new Set([TransferInternalState.RESERVED, TransferInternalState.RESERVED_FORWARDED])
 
 const savePayeeTransferResponse = async (transferId, payload, action, fspiopError) => {
   const histTimerSavePayeeTranferResponsedEnd = Metrics.getHistogram(
@@ -361,12 +361,13 @@ const savePayeeTransferResponse = async (transferId, payload, action, fspiopErro
 
     await knex.transaction(async (trx) => {
       // The payee's response may only decide a transfer that is still reserved. The fulfil handler checks
-      // this first; this guard stops any other path from overwriting a final state.
+      // this first; this guard stops any other path from overwriting a state that was already committed.
+      // It is a plain read, not a lock, so it does not serialize concurrent writers of the same transfer.
       const latestState = await knex('transferStateChange').transacting(trx)
         .where({ transferId })
         .orderBy('transferStateChangeId', 'desc')
         .first('transferStateId')
-      if (!PAYEE_RESPONSE_ACCEPTED_STATES.includes(latestState?.transferStateId)) {
+      if (!PAYEE_RESPONSE_ACCEPTED_STATES.has(latestState?.transferStateId)) {
         logger.error('savePayeeTransferResponse::transfer not in a state that accepts a payee response, nothing written', { transferId, action, state: latestState?.transferStateId })
         throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR, 'non-RESERVED transfer state')
       }

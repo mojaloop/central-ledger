@@ -303,6 +303,25 @@ Test('FX Transfer Fulfil handler -->', fxFulfilTest => {
     })
   }
 
+  // Only the error callback (FX_ABORT) is accepted in RECEIVED_FULFIL_DEPENDENT, so an fx-forwarded message
+  // with an invalid fulfilment cannot abort an fxTransfer the FXP has already fulfilled.
+  fxFulfilTest.test('reject fx-forwarded with an invalid fulfilment for an fxTransfer in RECEIVED_FULFIL_DEPENDENT', async (t) => {
+    const fxTransferDetails = { ...fixtures.fxtGetAllDetailsByCommitRequestIdDto(), transferState: TransferInternalState.RECEIVED_FULFIL_DEPENDENT, expirationDate: new Date(Date.now() + 24 * 60 * 60 * 1000) }
+    sandbox.stub(FxFulfilService.prototype, 'getFxTransferDetails').resolves(fxTransferDetails)
+    sandbox.stub(FxFulfilService.prototype, 'validateHeaders').resolves()
+    sandbox.stub(FxFulfilService.prototype, 'validateEventType').resolves()
+    const validateFulfilment = sandbox.stub(FxFulfilService.prototype, 'validateFulfilment').resolves(false)
+    Comparators.duplicateCheckComparator.resolves({ hasDuplicateId: false, hasDuplicateHash: false })
+    const metadata = fixtures.fulfilMetadataDto({ action: Action.FX_FORWARDED })
+    const kafkaMessage = fixtures.fxFulfilKafkaMessageDto({ metadata })
+
+    await transferHandlers.fulfil(null, kafkaMessage)
+
+    t.ok(validateFulfilment.notCalled, 'the fulfilment is not checked, so it cannot abort the fxTransfer')
+    t.ok(fxTransferModel.fxTransfer.saveFxFulfilResponse.notCalled, 'the fxTransfer state is not changed')
+    t.end()
+  })
+
   fxFulfilTest.test('should detect invalid fxTransfer state', async (t) => {
     const transferState = 'wrongState'
     sandbox.stub(FxFulfilService.prototype, 'getFxTransferDetails').resolves({ transferState })

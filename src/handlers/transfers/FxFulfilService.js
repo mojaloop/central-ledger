@@ -39,6 +39,9 @@ const rethrow = require('../../shared/rethrow')
 const consumerCommit = true
 const fromSwitch = true
 
+const FX_FULFIL_ACCEPTED_STATES = new Set([TransferInternalState.RESERVED, TransferInternalState.RESERVED_FORWARDED])
+const FX_ABORT_ACCEPTED_STATES = new Set([...FX_FULFIL_ACCEPTED_STATES, TransferInternalState.RECEIVED_FULFIL_DEPENDENT])
+
 class FxFulfilService {
   // #state = null
 
@@ -262,14 +265,11 @@ class FxFulfilService {
   }
 
   async validateTransferState(transfer, functionality, action) {
-    // A fulfil is accepted only while the fxTransfer waits for one. The error callback can also abort an
-    // fxTransfer the FXP has already fulfilled (RECEIVED_FULFIL_DEPENDENT), for the case where its
-    // transfer is rejected or aborted by the payee.
-    const acceptedStates = [TransferInternalState.RESERVED, TransferInternalState.RESERVED_FORWARDED]
-    if (action !== Action.FX_COMMIT && action !== Action.FX_RESERVE) {
-      acceptedStates.push(TransferInternalState.RECEIVED_FULFIL_DEPENDENT)
-    }
-    if (!acceptedStates.includes(transfer.transferState)) {
+    // A fulfil is accepted only while the fxTransfer waits for one. Only the error callback (FX_ABORT) can
+    // also abort an fxTransfer the FXP has already fulfilled (RECEIVED_FULFIL_DEPENDENT), for the case
+    // where its transfer is rejected or aborted by the payee.
+    const acceptedStates = action === Action.FX_ABORT ? FX_ABORT_ACCEPTED_STATES : FX_FULFIL_ACCEPTED_STATES
+    if (!acceptedStates.has(transfer.transferState)) {
       const fspiopError = fspiopErrorFactory.fxTransferNonReservedState()
       const apiFSPIOPError = fspiopError.toApiErrorObject(this.Config.ERROR_HANDLING)
       const eventDetail = {

@@ -247,9 +247,9 @@ describe('handlers/transfers: fulfil callbacks may only change a transfer they a
     message.value.content.payload.fulfilment = WRONG_FULFILMENT
     await handlerAll.fulfil(null, [message])
     await harness.redpandaDrain(mark, 2)
-    const [abortMessage] = harness.spoolLast(2)
-    assert.equal(abortMessage.topic, 'topic-transfer-position', 'the abort goes to the position handler')
-    assert.equal(abortMessage.valueParsed.metadata.event.action, 'abort-validation')
+    const abortMessages = harness.spoolLast(2).filter(m => m.topic === 'topic-transfer-position')
+    assert.equal(abortMessages.length, 1, 'the abort goes to the position handler')
+    assert.equal(abortMessages[0].valueParsed.metadata.event.action, 'abort-validation')
     await waitForState(transferId, 'ABORTED_ERROR')
 
     assert.deepEqual(await getStateHistory(transferId), ['RECEIVED_PREPARE', 'RESERVED', 'RECEIVED_ERROR', 'ABORTED_ERROR'])
