@@ -97,6 +97,19 @@ const bulkFulfil = async (error, messages) => {
           : Enum.Events.ActionLetter.unknown)
     const params = { message, kafkaTopic, decodedPayload: payload, consumer: Consumer, producer: Producer }
 
+    // A DFSP may not change another DFSP's bulk transfer. Check the headers before the duplicate check, so a
+    // callback from the wrong party is rejected to its sender only: nothing is recorded, and the bulk and its
+    // transfers are left as they are.
+    const headerValidation = await Validator.validateBulkTransferFulfilmentHeaders(payload, headers)
+    if (!headerValidation.isValid) {
+      Logger.isErrorEnabled && Logger.error(Util.breadcrumb(location, `callbackErrorSourceNotMatchingBulkFSPs--${actionLetter}3`))
+      const fspiopError = headerValidation.reasons[0]
+      const eventDetail = { functionality: Enum.Events.Event.Type.NOTIFICATION, action }
+      params.message.value.content.uriParams = { id: bulkTransferId }
+      await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, fspiopError: fspiopError.toApiErrorObject(Config.ERROR_HANDLING), eventDetail, fromSwitch, hubName: Config.HUB_NAME })
+      rethrow.rethrowAndCountFspiopError(fspiopError, { operation: 'bulkFulfil' })
+    }
+
     Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, { path: 'dupCheck' }))
 
     const { hasDuplicateId, hasDuplicateHash } = await Comparators.duplicateCheckComparator(bulkTransferId, payload.hash, BulkTransferService.getBulkTransferFulfilmentDuplicateCheck, BulkTransferService.saveBulkTransferFulfilmentDuplicateCheck)
@@ -113,8 +126,7 @@ const bulkFulfil = async (error, messages) => {
       rethrow.rethrowAndCountFspiopError(fspiopError, { operation: 'bulkFulfil' })
     }
 
-    // TODO: move FSPIOP-Source validation before Transfer Duplicate Check to accept only Payee's first request
-    const { isValid, reasons } = await Validator.validateBulkTransferFulfilment(payload, headers)
+    const { isValid, reasons } = await Validator.validateBulkTransferFulfilment(payload)
     if (isValid) {
       let state
       Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, { path: 'isValid' }))
@@ -206,12 +218,7 @@ const bulkFulfil = async (error, messages) => {
 
       try {
         Logger.isInfoEnabled && Logger.info(Util.breadcrumb(location, 'saveInvalidRequest'))
-        /**
-         * TODO: Following the example for regular transfers, the following should ABORT the
-         * entire bulk. CAUTION: As of 20191111 this code would also execute when failure
-         * reason is "FSPIOP-Source header should match Payee". In this case we should not
-         * abort the bulk as we would have accepted non-legitimate source.
-         */
+        // The payee's own fulfilment failed validation (its headers were checked above): abort the whole bulk.
         const state = await BulkTransferService.bulkFulfilTransitionToAborting(payload)
         const bulkTransfers = await BulkTransferService.getBulkTransferById(payload.bulkTransferId)
         for (const individualTransferFulfil of bulkTransfers.payeeBulkTransfer.individualTransferResults) {

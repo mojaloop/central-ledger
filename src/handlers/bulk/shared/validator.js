@@ -202,21 +202,34 @@ const validateBulkTransfer = async (payload, headers) => {
   return { isValid, reasons, payerParticipantId, payeeParticipantId }
 }
 
-const validateBulkTransferFulfilment = async (payload, headers) => {
-  reasons.length = 0
-  let isValid = true
-  if (!payload) {
-    reasons.push(
-      ErrorHandler.Factory.createFSPIOPError(
-        ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR,
-        'A valid Bulk transfer fulfilment message must be provided'
-      )
+const missingFulfilmentPayload = () => {
+  reasons.push(
+    ErrorHandler.Factory.createFSPIOPError(
+      ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR,
+      'A valid Bulk transfer fulfilment message must be provided'
     )
-    isValid = false
-    return { isValid, reasons }
+  )
+  return { isValid: false, reasons }
+}
+
+// Checks that the callback comes from the bulk's payee and is addressed to its payer. The handler runs
+// this first, and rejects a mismatch to its sender only, so another DFSP can't change the bulk.
+const validateBulkTransferFulfilmentHeaders = async (payload, headers) => {
+  reasons.length = 0
+  if (!payload) {
+    return missingFulfilmentPayload()
   }
-  isValid = isValid && await validateFspiopSourceAndDestination(payload, headers)
-  isValid = isValid && validateCompletedTimestamp(payload)
+  const isValid = await validateFspiopSourceAndDestination(payload, headers)
+  return { isValid, reasons }
+}
+
+// Checks the payee's fulfilment itself. The headers are checked by validateBulkTransferFulfilmentHeaders.
+const validateBulkTransferFulfilment = async (payload) => {
+  reasons.length = 0
+  if (!payload) {
+    return missingFulfilmentPayload()
+  }
+  const isValid = validateCompletedTimestamp(payload)
   return { isValid, reasons }
 }
 
@@ -256,6 +269,7 @@ const validateParticipantBulkTransferId = async function (participantName, bulkT
 module.exports = {
   validateBulkTransfer,
   validateBulkTransferFulfilment,
+  validateBulkTransferFulfilmentHeaders,
   validateParticipantByName,
   validateParticipantBulkTransferId
 }
