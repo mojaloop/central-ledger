@@ -40,6 +40,7 @@ import TransferFacade from "../../models/transfer/facade"
 import handlerAll from '../transfers/handler'
 import handlerPrepare from '../transfers/prepare'
 import PositionBatchHandler from './handlerBatch'
+import { assertNestedFields } from '../../lib/config/util'
 
 const harness = Harness.getInstance()
 

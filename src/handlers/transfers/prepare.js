@@ -55,7 +55,8 @@ const consumerCommit = true
 const fromSwitch = true
 const proxyEnabled = Config.PROXY_CACHE_CONFIG.enabled
 
-const proceedForwardErrorMessage = async ({ fspiopError, isFx, params }) => {
+const proceedForwardErrorMessage = async ({ fspiopError, isFx, params, ID }) => {
+  params.message.value.content.uriParams = { id: ID }
   const eventDetail = {
     functionality: Type.NOTIFICATION,
     action: isFx ? Action.FX_FORWARDED : Action.FORWARDED
@@ -81,7 +82,7 @@ const forwardPrepare = async ({ isFx, params, ID }) => {
       //            notify the payerFsp and proxy of the error.
       //            As long as the `to` and `from` message values are the fsp and fxp,
       //            and the action is `fx-forwarded`, the ml-api-adapter will notify both.
-      await proceedForwardErrorMessage({ fspiopError, isFx, params })
+      await proceedForwardErrorMessage({ fspiopError, isFx, params, ID })
       return true
     }
 
@@ -95,7 +96,7 @@ const forwardPrepare = async ({ isFx, params, ID }) => {
       //            notify the payerFsp and proxy of the error.
       //            As long as the `to` and `from` message values are the fsp and fxp,
       //            and the action is `fx-forwarded`, the ml-api-adapter will notify both.
-      await proceedForwardErrorMessage({ fspiopError, isFx, params })
+      await proceedForwardErrorMessage({ fspiopError, isFx, params, ID })
     }
   } else {
     const transfer = await TransferService.getById(ID)
@@ -108,7 +109,7 @@ const forwardPrepare = async ({ isFx, params, ID }) => {
       //            notify the payerFsp and proxy of the error.
       //            As long as the `to` and `from` message values are the payer and payee,
       //            and the action is `forwarded`, the ml-api-adapter will notify both.
-      await proceedForwardErrorMessage({ fspiopError, isFx, params })
+      await proceedForwardErrorMessage({ fspiopError, isFx, params, ID })
       return true
     }
 
@@ -122,7 +123,7 @@ const forwardPrepare = async ({ isFx, params, ID }) => {
       //            notify the payerFsp and proxy of the error.
       //            As long as the `to` and `from` message values are the payer and payee,
       //            and the action is `forwarded`, the ml-api-adapter will notify both.
-      await proceedForwardErrorMessage({ fspiopError, isFx, params })
+      await proceedForwardErrorMessage({ fspiopError, isFx, params, ID })
     }
   }
 
@@ -254,6 +255,7 @@ const processDuplication = async ({
   }
 
   if (error) {
+    params.message.value.content.uriParams = { id: ID }
     await Kafka.proceed(Config.KAFKA_CONFIG, params, {
       consumerCommit,
       fspiopError: error.toApiErrorObject(Config.ERROR_HANDLING),
