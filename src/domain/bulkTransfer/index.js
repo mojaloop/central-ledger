@@ -188,6 +188,7 @@ const BulkTransferService = {
   bulkTransferAssociationCreate: BulkTransferAssociationModel.create,
   bulkTransferAssociationUpdate: BulkTransferAssociationModel.update,
   bulkTransferAssociationExists: BulkTransferAssociationModel.exists,
+  getBulkTransferTransferIds: BulkTransferAssociationModel.getTransferIds,
   createBulkTransferState: BulkTransferStateChangeModel.create,
   getBulkTransferState: BulkTransferStateChangeModel.getByTransferId,
   getBulkTransferDuplicateCheck: BulkTransferDuplicateCheckModel.getBulkTransferDuplicateCheck,

@@ -28,6 +28,7 @@ Test('bulkTransfer validator', validatorTest => {
     }
     sandbox = Sinon.createSandbox()
     sandbox.stub(BulkTransfer, 'getParticipantsById')
+    sandbox.stub(BulkTransfer, 'getBulkTransferTransferIds')
     test.end()
   })
 
@@ -100,6 +101,35 @@ Test('bulkTransfer validator', validatorTest => {
     })
 
     headersTest.end()
+  })
+
+  validatorTest.test('validateBulkTransferFulfilmentResults should', resultsTest => {
+    resultsTest.test('pass when every result is a transfer of the bulk', async (test) => {
+      const transferIds = [randomUUID(), randomUUID()]
+      BulkTransfer.getBulkTransferTransferIds.returns(Promise.resolve(transferIds))
+
+      const {
+        isValid
+      } = await Validator.validateBulkTransferFulfilmentResults('bulkTransferId', transferIds.map(transferId => ({ transferId })))
+      test.equal(isValid, true)
+      test.ok(BulkTransfer.getBulkTransferTransferIds.calledOnceWith('bulkTransferId'))
+      test.end()
+    })
+
+    resultsTest.test('fail when a result is a transfer outside the bulk', async (test) => {
+      const transferIds = [randomUUID(), randomUUID()]
+      BulkTransfer.getBulkTransferTransferIds.returns(Promise.resolve(transferIds))
+
+      const {
+        isValid, reasons
+      } = await Validator.validateBulkTransferFulfilmentResults('bulkTransferId', [{ transferId: transferIds[0] }, { transferId: randomUUID() }])
+      test.equal(reasons[0].apiErrorCode.code, '3100')
+      test.equal(reasons[0].message, 'Bulk fulfil failed validation - individualTransferResults must only include transfers of this bulk')
+      test.equal(isValid, false)
+      test.end()
+    })
+
+    resultsTest.end()
   })
 
   validatorTest.test('validateBulkTransferFulfilment should', validateBulkTransferFulfilmentTest => {

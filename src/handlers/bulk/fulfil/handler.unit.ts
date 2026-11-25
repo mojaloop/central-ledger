@@ -42,6 +42,7 @@ const { Action, Type } = Enum.Events.Event
 const PAYER = 'dfsp1'
 const PAYEE = 'dfsp2'
 const OTHER = 'dfsp3'
+const FULFILMENT = 'adlcfFFpGkn3dDRPtR5zhCu8FrbgvrQwwmzuH0iQ0AI'
 
 type MessageOptions = { source?: string, destination?: string, completedTimestamp?: string, action?: string }
 
@@ -84,12 +85,17 @@ describe('bulk fulfil handler', () => {
   let bulkFulfilError: any
   let transitionToAborting: any
   let associationUpdate: any
+  // The bulk's own transfers, and the individual results the payee sent (as read from the object store).
+  let bulkTransferIds: string[]
+  let individualResults: any[]
 
   // The options (third argument) of each Kafka.proceed call.
   const proceedOptions = (): any[] => proceed.mock.calls.map((call: any) => call.arguments[2])
   const proceededActions = (): string[] => proceedOptions().map(options => options.eventDetail.action)
 
   beforeEach(() => {
+    bulkTransferIds = [randomUUID(), randomUUID()]
+    individualResults = [{ transferId: bulkTransferIds[0], fulfilment: FULFILMENT }]
     proceed = mock.method(Kafka, 'proceed', async () => true)
     duplicateCheck = mock.method(Comparators, 'duplicateCheckComparator', async () => ({ hasDuplicateId: false, hasDuplicateHash: false }))
     mock.method(Service, 'getParticipantsById', async () => ({ payerFsp: PAYER, payeeFsp: PAYEE }))
@@ -100,10 +106,11 @@ describe('bulk fulfil handler', () => {
       payeeBulkTransfer: { individualTransferResults: [{ transferId: randomUUID() }, { transferId: randomUUID() }] }
     }))
     associationUpdate = mock.method(Service, 'bulkTransferAssociationUpdate', async () => {})
+    mock.method(Service, 'getBulkTransferTransferIds', async () => bulkTransferIds)
     mock.method(BulkTransferModels, 'getIndividualTransferFulfilModel', () => ({
       find: () => ({
         cursor: async function * () {
-          yield { payload: { transferId: randomUUID(), fulfilment: 'adlcfFFpGkn3dDRPtR5zhCu8FrbgvrQwwmzuH0iQ0AI' } }
+          for (const payload of individualResults) yield { payload: { ...payload } }
         }
       })
     }))
@@ -139,6 +146,31 @@ describe('bulk fulfil handler', () => {
         assert.ok(!proceedOptions().some(o => o.eventDetail.functionality === Type.FULFIL), 'no transfer is sent to the fulfil handler')
       })
     }
+  }
+
+  // A bulk callback may only change transfers of this bulk: a result naming another transfer rejects the
+  // whole callback to its sender, before anything is recorded or sent.
+  for (const { name, foreignResult } of [
+    { name: 'an error', foreignResult: { errorInformation: { errorCode: '5000', errorDescription: 'rejected' } } },
+    { name: 'no fulfilment', foreignResult: {} },
+    { name: 'a fulfilment', foreignResult: { fulfilment: FULFILMENT } }
+  ]) {
+    it(`rejects a callback whose results include a transfer outside the bulk, with ${name}, to its sender only`, async () => {
+      individualResults.push({ transferId: randomUUID(), ...foreignResult })
+      const message = buildMessage()
+
+      await assert.rejects(BulkFulfilHandler.bulkFulfil(null, [message]), /individualTransferResults must only include transfers of this bulk/)
+
+      assert.equal(proceed.mock.callCount(), 1, 'one message: the error to the sender')
+      const [, params, options] = proceed.mock.calls[0].arguments
+      assert.deepEqual(options.eventDetail, { functionality: Type.NOTIFICATION, action: Action.BULK_COMMIT })
+      assert.equal(options.fromSwitch, true, 'sent back to the sender')
+      assert.deepEqual(params.message.value.content.uriParams, { id: message.value.content.payload.bulkTransferId })
+      assert.equal(duplicateCheck.mock.callCount(), 0, 'nothing recorded, so the payee can resend')
+      assert.equal(bulkFulfil.mock.callCount() + transitionToAborting.mock.callCount(), 0, 'the bulk is not changed')
+      assert.equal(associationUpdate.mock.callCount(), 0, 'no transfer is changed')
+      assert.ok(!proceedOptions().some(o => o.eventDetail.functionality === Type.FULFIL), 'no transfer is sent to the fulfil handler')
+    })
   }
 
   it('aborts the whole bulk when the payee\'s own fulfilment fails validation, as before', async () => {

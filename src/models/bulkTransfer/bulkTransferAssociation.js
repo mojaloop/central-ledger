@@ -75,3 +75,14 @@ exports.count = async (bulkTransferId, bulkProcessingStateId) => {
     rethrow.rethrowDatabaseError(err)
   }
 }
+
+// The ids of the transfers that belong to a bulk.
+exports.getTransferIds = async (bulkTransferId) => {
+  try {
+    const knex = Db.getKnex()
+    const rows = await knex('bulkTransferAssociation').select('transferId').where({ bulkTransferId })
+    return rows.map(row => row.transferId)
+  } catch (err) {
+    rethrow.rethrowDatabaseError(err)
+  }
+}

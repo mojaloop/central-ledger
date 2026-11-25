@@ -1749,6 +1749,47 @@ Test('Transfer handler', transferHandlerTest => {
       test.end()
     })
 
+    // A bulk's individual transfer is acted on only if its own payee sent the bulk callback. Otherwise the
+    // transfer is left as it is and only the offset is committed.
+    for (const { action, source } of [
+      { action: 'bulk-commit', source: 'dfsp3' },
+      { action: 'bulk-abort', source: 'dfsp3' },
+      { action: 'bulk-abort', source: 'dfsp1' }
+    ]) {
+      fulfilTest.test(`leave the transfer as it is for a ${action} whose source ${source} is not its payee`, async (test) => {
+        const localfulfilMessages = MainUtil.clone(fulfilMessages)
+        await Consumer.createHandler(topicName, config, command)
+        Kafka.transformGeneralTopicName.returns(topicName)
+        TransferService.getById.returns(Promise.resolve({
+          condition: 'condition',
+          payeeFsp: 'dfsp2',
+          payerFsp: 'dfsp1',
+          transferState: TransferState.RESERVED
+        }))
+        Validator.validateFulfilCondition.returns(true)
+        localfulfilMessages[1].value.content.headers['fspiop-source'] = source
+        localfulfilMessages[1].value.content.headers['fspiop-destination'] = 'dfsp1'
+        if (action === 'bulk-abort') {
+          localfulfilMessages[1].value.content.payload = errInfo
+        } else {
+          localfulfilMessages[1].value.content.payload.fulfilment = 'condition'
+        }
+        localfulfilMessages[1].value.metadata.event.action = action
+        Kafka.proceed.returns(true)
+        Comparators.duplicateCheckComparator.returns(Promise.resolve({ hasDuplicateId: false, hasDuplicateHash: false }))
+
+        const result = await allTransferHandlers.fulfil(null, localfulfilMessages[1])
+
+        test.equal(result, true)
+        test.ok(Kafka.proceed.calledOnce, 'Kafka.proceed was called once')
+        test.equal(Kafka.proceed.getCall(0).args[2].consumerCommit, true, 'the offset is committed')
+        test.equal(Kafka.proceed.getCall(0).args[2].eventDetail, undefined, 'no message is produced')
+        test.ok(Comparators.duplicateCheckComparator.notCalled, 'nothing is recorded')
+        test.ok(TransferService.handlePayeeResponse.notCalled, 'the transfer state is not changed')
+        test.end()
+      })
+    }
+
     fulfilTest.test('produce message to position topic when validations pass - autocommit is enabled', async (test) => {
       const localfulfilMessages = MainUtil.clone(fulfilMessages)
       await Consumer.createHandler(topicName, config, command)

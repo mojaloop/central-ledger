@@ -223,6 +223,23 @@ const validateBulkTransferFulfilmentHeaders = async (payload, headers) => {
   return { isValid, reasons }
 }
 
+// Checks that every individual result names a transfer of this bulk, so a bulk callback can't change a
+// transfer outside it. The handler runs this before the duplicate check, like the header check.
+const validateBulkTransferFulfilmentResults = async (bulkTransferId, individualTransferResults) => {
+  reasons.length = 0
+  const bulkTransferIds = new Set(await BulkTransferService.getBulkTransferTransferIds(bulkTransferId))
+  const isValid = individualTransferResults.every(result => bulkTransferIds.has(result.transferId))
+  if (!isValid) {
+    reasons.push(
+      ErrorHandler.Factory.createFSPIOPError(
+        ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR,
+        'Bulk fulfil failed validation - individualTransferResults must only include transfers of this bulk'
+      )
+    )
+  }
+  return { isValid, reasons }
+}
+
 // Checks the payee's fulfilment itself. The headers are checked by validateBulkTransferFulfilmentHeaders.
 const validateBulkTransferFulfilment = async (payload) => {
   reasons.length = 0
@@ -270,6 +287,7 @@ module.exports = {
   validateBulkTransfer,
   validateBulkTransferFulfilment,
   validateBulkTransferFulfilmentHeaders,
+  validateBulkTransferFulfilmentResults,
   validateParticipantByName,
   validateParticipantBulkTransferId
 }

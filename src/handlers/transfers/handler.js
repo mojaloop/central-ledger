@@ -243,6 +243,19 @@ const processFulfilMessage = async (message, functionality, span) => {
     }
   }
 
+  // A bulk's individual transfers come from the bulk fulfil handler, which has already checked the bulk callback.
+  // As a second check, act only on a transfer whose own payee sent that callback. The destination isn't checked:
+  // a bulk callback may be addressed to the hub (mojaloop/project#3024). On a mismatch the transfer is left as it
+  // is; only the offset is committed.
+  const bulkActions = [TransferEventAction.BULK_COMMIT, TransferEventAction.BULK_ABORT]
+  const source = headers[Enum.Http.Headers.FSPIOP.SOURCE]
+  if (bulkActions.includes(action) && (!source || source.toLowerCase() !== transfer.payeeFsp.toLowerCase())) {
+    Logger.isErrorEnabled && Logger.error(Util.breadcrumb(location, `callbackErrorBulkSourceNotMatchingPayee--${actionLetter}2`))
+    const fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR, `${Enum.Http.Headers.FSPIOP.SOURCE} does not match payee fsp on the bulk fulfil`)
+    await Kafka.proceed(Config.KAFKA_CONFIG, params, { consumerCommit, hubName: Config.HUB_NAME })
+    rethrow.rethrowAndCountFspiopError(fspiopError, { operation: 'processFulfilMessage' })
+  }
+
   // If execution continues after this point we are sure transfer exists and source matches payee fsp
 
   /**
