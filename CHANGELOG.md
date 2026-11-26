@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [20.5.3](https://github.com/mojaloop/central-ledger/compare/v20.5.2...v20.5.3) (2026-11-26)
+
+
+### Bug Fixes
+
+* reject a bulk fulfil callback from the wrong party to its sender only ([#1322](https://github.com/mojaloop/central-ledger/issues/1322)) ([9dc90ab](https://github.com/mojaloop/central-ledger/commit/9dc90ab996d6b8e649f6cc629d6de7af3c33d0d8))
+
+
+### Chore
+
+* **sbom:** update sbom [skip ci] ([7996653](https://github.com/mojaloop/central-ledger/commit/7996653191eb90aef4669c329e22a546c43c8caf))
+
 ### [20.5.2](https://github.com/mojaloop/central-ledger/compare/v20.5.1...v20.5.2) (2026-11-24)
 
 
