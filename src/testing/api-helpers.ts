@@ -268,7 +268,9 @@ export interface PaymentOptions {
   }
   date: Date,
   expirySeconds: number,
-  fx: boolean
+  fx: boolean,
+  /** The proxy that forwards the payee's callbacks, when the payee is in another scheme. */
+  payeeProxy?: string
 }
 
 export class Payment {
@@ -321,7 +323,8 @@ export class Payment {
       },
       date: this.options.date,
       expirySeconds: this.options.expirySeconds,
-      transferState: state
+      transferState: state,
+      payeeProxy: this.options.payeeProxy
     }
     const putTransfer = buildMojaloopPutTransfer(params)
     const messageKafka = buildMessageFulfil(
@@ -336,6 +339,7 @@ export class Payment {
       payerFsp: this.options.payerFsp,
       payeeFsp: this.options.payeeFsp,
       date: this.options.date,
+      payeeProxy: this.options.payeeProxy
     })
     const messageKafka = buildMessageAbort(
       this.options.harness, putTransfer, this.options.transferId
@@ -387,6 +391,7 @@ export class PaymentBuilder {
   private _date: Date = new Date();
   private expirySeconds: number = 30;
   private _fx: boolean = false
+  private _payeeProxy?: string
   private amountComplex: {
     amount: string,
     currency: string
@@ -433,6 +438,16 @@ export class PaymentBuilder {
     return this
   }
 
+  /**
+   * The payee is in another scheme, and its callbacks are forwarded by this proxy, which sets
+   * `fspiop-proxy` on them, as the inter-scheme proxy adapter does.
+   */
+  payeeProxy(proxyId: string): this {
+    this._payeeProxy = proxyId
+
+    return this
+  }
+
   amount(amount: string, currency: string = 'USD') {
     this.amountComplex = {
       amount,
@@ -456,6 +471,7 @@ export class PaymentBuilder {
       date: this._date,
       expirySeconds: this.expirySeconds,
       fx: this._fx,
+      payeeProxy: this._payeeProxy,
     }
 
     return new Payment(options)
@@ -476,7 +492,9 @@ export interface ForexOptions {
   sourceAmountComplex: { amount: string, currency: string }
   targetAmountComplex: { amount: string, currency: string }
   date: Date,
-  expirySeconds: number
+  expirySeconds: number,
+  /** The proxy that forwards the FXP's callbacks, when the FXP is in another scheme. */
+  counterPartyProxy?: string
 }
 
 export class Forex {
@@ -538,7 +556,8 @@ export class Forex {
       date: this.options.date,
       expirySeconds: this.options.expirySeconds,
       completedTimestamp: new Date(),
-      conversionState: "RESERVED"
+      conversionState: "RESERVED",
+      counterPartyProxy: this.options.counterPartyProxy
     }
 
     const messageApi = buildMojaloopPutFxTransfer(params)
@@ -563,6 +582,7 @@ export class Forex {
       initiatingFsp: this.options.initiatingFsp,
       counterPartyFsp: this.options.counterPartyFsp,
       date: this.options.date,
+      counterPartyProxy: this.options.counterPartyProxy
     })
     const messageKafka = buildMessageAbortFx(
       this.options.harness, putTransfer, this.options.commitRequestId,
@@ -655,6 +675,17 @@ export class ForexBuilder {
     return this;
   }
 
+  /**
+   * The FXP is in another scheme, and its callbacks are forwarded by this proxy, which sets
+   * `fspiop-proxy` on them, as the inter-scheme proxy adapter does.
+   */
+  counterPartyProxy(proxyId: string): this {
+    assert(proxyId)
+    this._counterPartyProxy = proxyId
+
+    return this
+  }
+
   private _commitRequestId!: string
   private _determiningTransferId!: string
   private _initiatingFsp!: string
@@ -670,6 +701,7 @@ export class ForexBuilder {
   } = { amount: '100.00', currency: 'USD' }
   private _date: Date = new Date();
   private _expirySeconds: number = 30
+  private _counterPartyProxy?: string
 
   build(): Forex {
     assert(this.harness, 'harness is undefined, did you forget `.deps()`?')
@@ -689,6 +721,7 @@ export class ForexBuilder {
       targetAmountComplex: this._targetAmountComplex,
       date: this._date,
       expirySeconds: this._expirySeconds,
+      counterPartyProxy: this._counterPartyProxy,
     }
 
     return new Forex(options)
@@ -778,7 +811,9 @@ export interface PutTransferBuilderParams {
     amount: string,
     currency: string,
   }
-  expirySeconds: number
+  expirySeconds: number,
+  /** Set as `fspiop-proxy` when the payee's callback is forwarded by a proxy. */
+  payeeProxy?: string
 }
 
 export interface PutFxTransferBuilderParams {
@@ -812,12 +847,17 @@ export interface PutFxTransferBuilderParams {
    * The current status of the conversion request.
    */
   conversionState: 'RECEIVED' | 'RESERVED' | 'COMMITTED' | 'ABORTED',
+
+  /** Set as `fspiop-proxy` when the FXP's callback is forwarded by a proxy. */
+  counterPartyProxy?: string
 }
 
 export interface AbortTransferBuilderParams {
   payerFsp: string,
   payeeFsp: string,
   date: Date,
+  /** Set as `fspiop-proxy` when the payee's callback is forwarded by a proxy. */
+  payeeProxy?: string
 }
 
 export interface AbortFxTransferBuilderParams {
@@ -832,7 +872,13 @@ export interface AbortFxTransferBuilderParams {
   counterPartyFsp: string,
 
   date: Date,
+
+  /** Set as `fspiop-proxy` when the FXP's callback is forwarded by a proxy. */
+  counterPartyProxy?: string
 }
+
+/** The `fspiop-proxy` header a proxy adds to the callbacks it forwards, if any. */
+const proxyHeader = (proxyId?: string): Record<string, string> => proxyId ? { 'fspiop-proxy': proxyId } : {}
 
 export type QuoteIlpResponse = {
   fulfilment: string;
@@ -979,6 +1025,7 @@ export function buildMojaloopPutTransfer(params: PutTransferBuilderParams): Tran
     date: params.date.toUTCString(),
     'fspiop-destination': params.payerFsp,
     'fspiop-source': params.payeeFsp,
+    ...proxyHeader(params.payeeProxy),
   }
 
   const mockQuoteResponse: MockQuoteILPResponse = {
@@ -1017,6 +1064,7 @@ export function buildMojaloopPutFxTransfer(params: PutFxTransferBuilderParams): 
     date: params.date.toUTCString(),
     'fspiop-destination': params.initiatingFsp,
     'fspiop-source': params.counterPartyFsp,
+    ...proxyHeader(params.counterPartyProxy),
   }
 
   const payload = {
@@ -1038,6 +1086,7 @@ export function buildMojaloopAbortTransfer(params: AbortTransferBuilderParams): 
     date: params.date.toUTCString(),
     'fspiop-destination': params.payerFsp,
     'fspiop-source': params.payeeFsp,
+    ...proxyHeader(params.payeeProxy),
   }
   const payload = {
     // Ref: https://docs.mojaloop.io/api/fspiop/v1.1/api-definition.html#payee-errors-5-xxx
@@ -1060,6 +1109,7 @@ export function buildMojaloopAbortFxTransfer(params: AbortFxTransferBuilderParam
     date: params.date.toUTCString(),
     'fspiop-destination': params.initiatingFsp,
     'fspiop-source': params.counterPartyFsp,
+    ...proxyHeader(params.counterPartyProxy),
   }
 
   const payload = {

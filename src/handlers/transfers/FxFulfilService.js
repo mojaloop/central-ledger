@@ -33,7 +33,7 @@ const fspiopErrorFactory = require('../../shared/fspiopErrorFactory')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 
 const { Type, Action } = Enum.Events.Event
-const { SOURCE, DESTINATION } = Enum.Http.Headers.FSPIOP
+const { SOURCE, DESTINATION, PROXY } = Enum.Http.Headers.FSPIOP
 const { TransferState, TransferInternalState } = Enum.Transfers
 const rethrow = require('../../shared/rethrow')
 const consumerCommit = true
@@ -85,7 +85,13 @@ class FxFulfilService {
   async validateHeaders({ transfer, headers, functionality }) {
     let fspiopError = null
 
-    if (!transfer.counterPartyFspIsProxy && (headers[SOURCE]?.toLowerCase() !== transfer.counterPartyFspName.toLowerCase())) {
+    if (transfer.counterPartyFspIsProxy) {
+      // An FXP in another scheme sends its callback through its proxy, which sets FSPIOP-Proxy to its own id
+      // (ml-api-adapter checks it against the authenticated caller). The fxTransfer stores the proxy as the FXP.
+      if (headers[PROXY]?.toLowerCase() !== transfer.counterPartyFspName.toLowerCase()) {
+        fspiopError = fspiopErrorFactory.fxHeaderProxyValidationError()
+      }
+    } else if (headers[SOURCE]?.toLowerCase() !== transfer.counterPartyFspName.toLowerCase()) {
       fspiopError = fspiopErrorFactory.fxHeaderSourceValidationError()
     }
     if (!transfer.initiatingFspIsProxy && (headers[DESTINATION]?.toLowerCase() !== transfer.initiatingFspName.toLowerCase())) {

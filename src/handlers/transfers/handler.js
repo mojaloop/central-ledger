@@ -203,17 +203,24 @@ const processFulfilMessage = async (message, functionality, span) => {
 
   // Lets validate FSPIOP Source & Destination Headers
   // We only check headers for specific actions that need checking (i.e. bulk should not be checked since it's already done elsewhere)
-  // In interscheme scenario, we store proxy fsp id in transferParticipant table and hence we can't compare that data with fspiop headers in fulfil
+  // In interscheme scenario, we store proxy fsp id in transferParticipant table, so for a proxied payee we compare it with FSPIOP-Proxy, not FSPIOP-Source
 
   if (validActionsForRouteValidations.includes(action)) {
-    // Ensure payerFsp and payeeFsp are not proxies and if they are, skip validating headers
+    const source = headers[Enum.Http.Headers.FSPIOP.SOURCE]
+    const destination = headers[Enum.Http.Headers.FSPIOP.DESTINATION]
+    // A payee in another scheme sends its callback through its proxy, which sets FSPIOP-Proxy to its own id
+    // (ml-api-adapter checks it against the authenticated caller). The transfer stores the proxy as the payee,
+    // so check FSPIOP-Proxy instead of FSPIOP-Source.
+    const isPayeeMismatch = transfer.payeeIsProxy
+      ? headers[Enum.Http.Headers.FSPIOP.PROXY]?.toLowerCase() !== transfer.payeeFsp.toLowerCase()
+      : !!source && source.toLowerCase() !== transfer.payeeFsp.toLowerCase()
+    // The destination is not checked when the payer is in another scheme.
+    const isPayerMismatch = !transfer.payerIsProxy && !!destination && destination.toLowerCase() !== transfer.payerFsp.toLowerCase()
+
     /**
      * If fulfilment request is coming from a source not matching transfer payee fsp or destination not matching transfer payer fsp,
      */
-    if (
-      (headers[Enum.Http.Headers.FSPIOP.SOURCE] && !transfer.payeeIsProxy && (headers[Enum.Http.Headers.FSPIOP.SOURCE].toLowerCase() !== transfer.payeeFsp.toLowerCase())) ||
-      (headers[Enum.Http.Headers.FSPIOP.DESTINATION] && !transfer.payerIsProxy && (headers[Enum.Http.Headers.FSPIOP.DESTINATION].toLowerCase() !== transfer.payerFsp.toLowerCase()))
-    ) {
+    if (isPayeeMismatch || isPayerMismatch) {
       /**
        * If fulfilment request is coming from a source not matching transfer payee fsp or destination not matching transfer payer fsp,
        */
@@ -223,12 +230,14 @@ const processFulfilMessage = async (message, functionality, span) => {
       let fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR, 'FSP does not match one of the fsp-id\'s associated with a transfer on the Fulfil callback response')
 
       // Lets make the error specific if the PayeeFSP IDs do not match
-      if (!transfer.payeeIsProxy && (headers[Enum.Http.Headers.FSPIOP.SOURCE].toLowerCase() !== transfer.payeeFsp.toLowerCase())) {
-        fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR, `${Enum.Http.Headers.FSPIOP.SOURCE} does not match payee fsp on the Fulfil callback response`)
+      if (isPayeeMismatch) {
+        fspiopError = transfer.payeeIsProxy
+          ? ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR, `${Enum.Http.Headers.FSPIOP.PROXY} does not match payee proxy on the Fulfil callback response`)
+          : ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR, `${Enum.Http.Headers.FSPIOP.SOURCE} does not match payee fsp on the Fulfil callback response`)
       }
 
       // Lets make the error specific if the PayerFSP IDs do not match
-      if (!transfer.payerIsProxy && (headers[Enum.Http.Headers.FSPIOP.DESTINATION].toLowerCase() !== transfer.payerFsp.toLowerCase())) {
+      if (isPayerMismatch) {
         fspiopError = ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR, `${Enum.Http.Headers.FSPIOP.DESTINATION} does not match payer fsp on the Fulfil callback response`)
       }
 
