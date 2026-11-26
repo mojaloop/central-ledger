@@ -100,6 +100,35 @@ Test('bulkTransfer validator', validatorTest => {
       test.end()
     })
 
+    headersTest.test('fail when the bulk transfer is not found', async (test) => {
+      BulkTransfer.getParticipantsById.returns(Promise.resolve(undefined))
+
+      const {
+        isValid, reasons
+      } = await Validator.validateBulkTransferFulfilmentHeaders(payload, headers)
+      test.equal(reasons[0].apiErrorCode.code, '3210')
+      test.equal(reasons[0].message, 'Bulk transfer ID not found')
+      test.equal(isValid, false)
+      test.end()
+    })
+
+    headersTest.test('pass when the header names differ from the bulk FSPs in case only', async (test) => {
+      BulkTransfer.getParticipantsById.returns(Promise.resolve({
+        payerFsp: 'dfsp1',
+        payeeFsp: 'dfsp2'
+      }))
+      headers = {
+        'fspiop-source': 'DFSP2',
+        'fspiop-destination': 'Dfsp1'
+      }
+
+      const {
+        isValid
+      } = await Validator.validateBulkTransferFulfilmentHeaders(payload, headers)
+      test.equal(isValid, true)
+      test.end()
+    })
+
     headersTest.end()
   })
 
