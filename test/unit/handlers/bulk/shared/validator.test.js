@@ -28,6 +28,7 @@ Test('bulkTransfer validator', validatorTest => {
     }
     sandbox = Sinon.createSandbox()
     sandbox.stub(BulkTransfer, 'getParticipantsById')
+    sandbox.stub(BulkTransfer, 'getBulkTransferTransferIds')
     test.end()
   })
 
@@ -36,8 +37,8 @@ Test('bulkTransfer validator', validatorTest => {
     test.end()
   })
 
-  validatorTest.test('validateBulkTransferFulfilment should', validateBulkTransferFulfilmentTest => {
-    validateBulkTransferFulfilmentTest.test('pass validation for valid payload', async (test) => {
+  validatorTest.test('validateBulkTransferFulfilmentHeaders should', headersTest => {
+    headersTest.test('pass when the source is the payee and the destination the payer', async (test) => {
       BulkTransfer.getParticipantsById.returns(Promise.resolve({
         payerFsp: 'dfsp1',
         payeeFsp: 'dfsp2'
@@ -45,27 +46,23 @@ Test('bulkTransfer validator', validatorTest => {
 
       const {
         isValid
-      } = await Validator.validateBulkTransferFulfilment(payload, headers)
+      } = await Validator.validateBulkTransferFulfilmentHeaders(payload, headers)
       test.equal(isValid, true)
       test.end()
     })
 
-    validateBulkTransferFulfilmentTest.test('fail for no payload', async (test) => {
-      BulkTransfer.getParticipantsById.returns(Promise.resolve({
-        payerFsp: 'dfsp1',
-        payeeFsp: 'dfsp2'
-      }))
-
+    headersTest.test('fail for no payload', async (test) => {
       const {
         isValid, reasons
-      } = await Validator.validateBulkTransferFulfilment(null, headers)
+      } = await Validator.validateBulkTransferFulfilmentHeaders(null, headers)
       test.equal(reasons[0].apiErrorCode.code, '3100')
       test.equal(reasons[0].apiErrorCode.message, 'Generic validation error')
       test.equal(isValid, false)
+      test.ok(BulkTransfer.getParticipantsById.notCalled)
       test.end()
     })
 
-    validateBulkTransferFulfilmentTest.test('fail on invalid payer', async (test) => {
+    headersTest.test('fail on invalid payer', async (test) => {
       BulkTransfer.getParticipantsById.returns(Promise.resolve({
         payerFsp: 'dfsp1',
         payeeFsp: 'dfsp2'
@@ -76,7 +73,7 @@ Test('bulkTransfer validator', validatorTest => {
       }
       const {
         isValid, reasons
-      } = await Validator.validateBulkTransferFulfilment(payload, headers)
+      } = await Validator.validateBulkTransferFulfilmentHeaders(payload, headers)
       test.equal(reasons[0].apiErrorCode.code, '3100')
       test.equal(reasons[0].apiErrorCode.message, 'Generic validation error')
       test.equal(reasons[0].message, 'FSPIOP-Destination header should match Payer FSP')
@@ -84,7 +81,7 @@ Test('bulkTransfer validator', validatorTest => {
       test.end()
     })
 
-    validateBulkTransferFulfilmentTest.test('fail on invalid payee', async (test) => {
+    headersTest.test('fail on invalid payee', async (test) => {
       BulkTransfer.getParticipantsById.returns(Promise.resolve({
         payerFsp: 'dfsp1',
         payeeFsp: 'dfsp2'
@@ -95,7 +92,7 @@ Test('bulkTransfer validator', validatorTest => {
       }
       const {
         isValid, reasons
-      } = await Validator.validateBulkTransferFulfilment(payload, headers)
+      } = await Validator.validateBulkTransferFulfilmentHeaders(payload, headers)
       test.equal(reasons[0].apiErrorCode.code, '3100')
       test.equal(reasons[0].apiErrorCode.message, 'Generic validation error')
       test.equal(reasons[0].message, 'FSPIOP-Source header should match Payee FSP')
@@ -103,17 +100,101 @@ Test('bulkTransfer validator', validatorTest => {
       test.end()
     })
 
-    validateBulkTransferFulfilmentTest.test('fail on invalid completedTimestamp', async (test) => {
+    headersTest.test('fail when the bulk transfer is not found', async (test) => {
+      BulkTransfer.getParticipantsById.returns(Promise.resolve(undefined))
+
+      const {
+        isValid, reasons
+      } = await Validator.validateBulkTransferFulfilmentHeaders(payload, headers)
+      test.equal(reasons[0].apiErrorCode.code, '3210')
+      test.equal(reasons[0].message, 'Bulk transfer ID not found')
+      test.equal(isValid, false)
+      test.end()
+    })
+
+    headersTest.test('pass when the header names differ from the bulk FSPs in case only', async (test) => {
       BulkTransfer.getParticipantsById.returns(Promise.resolve({
         payerFsp: 'dfsp1',
         payeeFsp: 'dfsp2'
       }))
+      headers = {
+        'fspiop-source': 'DFSP2',
+        'fspiop-destination': 'Dfsp1'
+      }
 
+      const {
+        isValid
+      } = await Validator.validateBulkTransferFulfilmentHeaders(payload, headers)
+      test.equal(isValid, true)
+      test.end()
+    })
+
+    headersTest.end()
+  })
+
+  validatorTest.test('validateBulkTransferFulfilmentResults should', resultsTest => {
+    resultsTest.test('pass when every result is a transfer of the bulk', async (test) => {
+      const transferIds = [randomUUID(), randomUUID()]
+      BulkTransfer.getBulkTransferTransferIds.returns(Promise.resolve(transferIds))
+
+      const {
+        isValid
+      } = await Validator.validateBulkTransferFulfilmentResults('bulkTransferId', transferIds.map(transferId => ({ transferId })))
+      test.equal(isValid, true)
+      test.ok(BulkTransfer.getBulkTransferTransferIds.calledOnceWith('bulkTransferId'))
+      test.end()
+    })
+
+    resultsTest.test('fail when a result is a transfer outside the bulk', async (test) => {
+      const transferIds = [randomUUID(), randomUUID()]
+      BulkTransfer.getBulkTransferTransferIds.returns(Promise.resolve(transferIds))
+
+      const {
+        isValid, reasons
+      } = await Validator.validateBulkTransferFulfilmentResults('bulkTransferId', [{ transferId: transferIds[0] }, { transferId: randomUUID() }])
+      test.equal(reasons[0].apiErrorCode.code, '3100')
+      test.equal(reasons[0].message, 'Bulk fulfil failed validation - individualTransferResults must only include transfers of this bulk')
+      test.equal(isValid, false)
+      test.end()
+    })
+
+    resultsTest.end()
+  })
+
+  validatorTest.test('validateBulkTransferFulfilment should', validateBulkTransferFulfilmentTest => {
+    validateBulkTransferFulfilmentTest.test('pass validation for valid payload', async (test) => {
+      const {
+        isValid
+      } = await Validator.validateBulkTransferFulfilment(payload)
+      test.equal(isValid, true)
+      test.end()
+    })
+
+    validateBulkTransferFulfilmentTest.test('fail for no payload', async (test) => {
+      const {
+        isValid, reasons
+      } = await Validator.validateBulkTransferFulfilment(null)
+      test.equal(reasons[0].apiErrorCode.code, '3100')
+      test.equal(reasons[0].apiErrorCode.message, 'Generic validation error')
+      test.equal(isValid, false)
+      test.end()
+    })
+
+    validateBulkTransferFulfilmentTest.test('not check the headers (validateBulkTransferFulfilmentHeaders does)', async (test) => {
+      const {
+        isValid
+      } = await Validator.validateBulkTransferFulfilment(payload)
+      test.equal(isValid, true)
+      test.ok(BulkTransfer.getParticipantsById.notCalled)
+      test.end()
+    })
+
+    validateBulkTransferFulfilmentTest.test('fail on invalid completedTimestamp', async (test) => {
       payload.completedTimestamp = new Date((new Date()).getTime() + (10 * 86400000))
 
       const {
         isValid, reasons
-      } = await Validator.validateBulkTransferFulfilment(payload, headers)
+      } = await Validator.validateBulkTransferFulfilment(payload)
       test.equal(reasons[0].apiErrorCode.code, '3100')
       test.equal(reasons[0].apiErrorCode.message, 'Generic validation error')
       test.equal(reasons[0].message, 'Bulk fulfil failed validation - completedTimestamp fails because future timestamp was provided')
@@ -122,16 +203,11 @@ Test('bulkTransfer validator', validatorTest => {
     })
 
     validateBulkTransferFulfilmentTest.test('fail on completedTimestamp exceeds timeout duration', async (test) => {
-      BulkTransfer.getParticipantsById.returns(Promise.resolve({
-        payerFsp: 'dfsp1',
-        payeeFsp: 'dfsp2'
-      }))
-
       payload.completedTimestamp = new Date((new Date()).getTime() - ((Config.MAX_FULFIL_TIMEOUT_DURATION_SECONDS + 1) * 1000))
 
       const {
         isValid, reasons
-      } = await Validator.validateBulkTransferFulfilment(payload, headers)
+      } = await Validator.validateBulkTransferFulfilment(payload)
       test.equal(reasons[0].apiErrorCode.code, '3100')
       test.equal(reasons[0].apiErrorCode.message, 'Generic validation error')
       test.equal(reasons[0].message, 'Bulk fulfil failed validation - completedTimestamp fails because provided timestamp exceeded the maximum timeout duration')

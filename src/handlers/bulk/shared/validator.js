@@ -85,17 +85,29 @@ const validateFspiopSourceMatchesPayer = (payload, headers) => {
 
 const validateFspiopSourceAndDestination = async (payload, headers) => {
   const participant = await BulkTransferService.getParticipantsById(payload.bulkTransferId)
-  const matchedPayee = (headers && headers[Enum.Http.Headers.FSPIOP.SOURCE] === participant.payeeFsp)
+  if (!participant) {
+    reasons.push(
+      ErrorHandler.Factory.createFSPIOPError(
+        ErrorHandler.Enums.FSPIOPErrorCodes.BULK_TRANSFER_ID_NOT_FOUND,
+        'Bulk transfer ID not found'
+      )
+    )
+    return false
+  }
+  // Names are compared ignoring case, as the regular transfer checks do.
+  const source = headers?.[Enum.Http.Headers.FSPIOP.SOURCE]?.toLowerCase()
+  const destination = headers?.[Enum.Http.Headers.FSPIOP.DESTINATION]?.toLowerCase()
+  const matchedPayee = (!!source && source === participant.payeeFsp.toLowerCase())
   const matchedPayer = (
-    headers &&
+    !!destination &&
     (
-      (headers[Enum.Http.Headers.FSPIOP.DESTINATION] === participant.payerFsp) ||
+      (destination === participant.payerFsp.toLowerCase()) ||
       // The following was added for fix(mojaloop/##3024): [core bulk] POST /bulkTransfers from Switch --> PayeeFSP to use Switch as fspiop-source - https://github.com/mojaloop/project/issues/3024
       // Notes:
       //  Due to the Bulk [Design Considerations](https://docs.mojaloop.io/technical/central-bulk-transfers/#_2-design-considerations),
       //  it is possible that the Switch may send a POST Request to the Payee FSP with the Source Header containing "Switch",
       //  and the Payee FSP thus responding with a PUT Callback and destination header containing the same value (Switch).
-      (headers[Enum.Http.Headers.FSPIOP.DESTINATION] === Config.HUB_NAME)
+      (destination === Config.HUB_NAME.toLowerCase())
     )
   )
 
@@ -202,21 +214,51 @@ const validateBulkTransfer = async (payload, headers) => {
   return { isValid, reasons, payerParticipantId, payeeParticipantId }
 }
 
-const validateBulkTransferFulfilment = async (payload, headers) => {
+const missingFulfilmentPayload = () => {
+  reasons.push(
+    ErrorHandler.Factory.createFSPIOPError(
+      ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR,
+      'A valid Bulk transfer fulfilment message must be provided'
+    )
+  )
+  return { isValid: false, reasons }
+}
+
+// Checks that the callback comes from the bulk's payee and is addressed to its payer. The handler runs
+// this first, and rejects a mismatch to its sender only, so another DFSP can't change the bulk.
+const validateBulkTransferFulfilmentHeaders = async (payload, headers) => {
   reasons.length = 0
-  let isValid = true
   if (!payload) {
+    return missingFulfilmentPayload()
+  }
+  const isValid = await validateFspiopSourceAndDestination(payload, headers)
+  return { isValid, reasons }
+}
+
+// Checks that every individual result names a transfer of this bulk, so a bulk callback can't change a
+// transfer outside it. The handler runs this before the duplicate check, like the header check.
+const validateBulkTransferFulfilmentResults = async (bulkTransferId, individualTransferResults) => {
+  reasons.length = 0
+  const bulkTransferIds = new Set(await BulkTransferService.getBulkTransferTransferIds(bulkTransferId))
+  const isValid = individualTransferResults.every(result => bulkTransferIds.has(result.transferId))
+  if (!isValid) {
     reasons.push(
       ErrorHandler.Factory.createFSPIOPError(
         ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR,
-        'A valid Bulk transfer fulfilment message must be provided'
+        'Bulk fulfil failed validation - individualTransferResults must only include transfers of this bulk'
       )
     )
-    isValid = false
-    return { isValid, reasons }
   }
-  isValid = isValid && await validateFspiopSourceAndDestination(payload, headers)
-  isValid = isValid && validateCompletedTimestamp(payload)
+  return { isValid, reasons }
+}
+
+// Checks the payee's fulfilment itself. The headers are checked by validateBulkTransferFulfilmentHeaders.
+const validateBulkTransferFulfilment = async (payload) => {
+  reasons.length = 0
+  if (!payload) {
+    return missingFulfilmentPayload()
+  }
+  const isValid = validateCompletedTimestamp(payload)
   return { isValid, reasons }
 }
 
@@ -256,6 +298,8 @@ const validateParticipantBulkTransferId = async function (participantName, bulkT
 module.exports = {
   validateBulkTransfer,
   validateBulkTransferFulfilment,
+  validateBulkTransferFulfilmentHeaders,
+  validateBulkTransferFulfilmentResults,
   validateParticipantByName,
   validateParticipantBulkTransferId
 }
