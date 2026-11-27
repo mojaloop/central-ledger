@@ -8,9 +8,12 @@ reject: [
   # ilp-packet >2.2.0 (3.x is currently an alpha prerelease) implements a newer ILP packet format
   # that is not compatible with the Mojaloop Specification.
   "ilp-packet",
-  # central-services-logger 12 cannot be installed yet: central-services-shared 19.0.0 declares the
-  # peer range 11.x.x for it, so npm stops with ERESOLVE (checked 2026-11-19). 12 also lets an uncaught
-  # exception or unhandled rejection end the process (mojaloop/central-services-logger#89), so the move
-  # needs a look at how this service shuts down. Remove once central-services-shared accepts 12.
-  "@mojaloop/central-services-logger"
+  # central-services-shared 20 needs central-services-logger 12. Stream 12 and database-lib 12 no
+  # longer close Kafka and DB clients on exit, and logger 12 lets an uncaught exception or unhandled
+  # rejection end the process. central-ledger first needs a shutdown path through css startingProcess
+  # (start and stop functions, producer flush on SIGTERM). Move all four together in that change.
+  "@mojaloop/central-services-logger",
+  "@mojaloop/central-services-shared",
+  "@mojaloop/central-services-stream",
+  "@mojaloop/database-lib"
 ]
