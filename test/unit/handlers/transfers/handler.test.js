@@ -1126,6 +1126,58 @@ Test('Transfer handler', transferHandlerTest => {
       test.end()
     })
 
+    // A payee in another scheme: the transfer stores its proxy as the payee, and its callbacks come through that
+    // proxy, which sets fspiop-proxy.
+    for (const [description, proxy] of [['no', undefined], ['another', 'otherProxy']]) {
+      fulfilTest.test(`fail validation for a proxied payee with ${description} fspiop-proxy header`, async (test) => {
+        const localfulfilMessages = MainUtil.clone(fulfilMessages)
+        await Consumer.createHandler(topicName, config, command)
+        Kafka.transformGeneralTopicName.returns(topicName)
+        TransferService.getById.returns(Promise.resolve({
+          payeeFsp: 'payeeProxy',
+          payeeIsProxy: true,
+          payerFsp: 'dfsp1'
+        }))
+        localfulfilMessages[0].value.content.headers['fspiop-source'] = 'externalPayee'
+        localfulfilMessages[0].value.content.headers['fspiop-destination'] = 'dfsp1'
+        if (proxy) localfulfilMessages[0].value.content.headers['fspiop-proxy'] = proxy
+        Kafka.proceed.returns(true)
+
+        const result = await allTransferHandlers.fulfil(null, localfulfilMessages)
+
+        test.equal(result, true)
+        test.ok(Kafka.proceed.calledOnce, 'Kafka.proceed was called once')
+        const kafkaCallOne = Kafka.proceed.getCall(0)
+        test.equal(kafkaCallOne.args[2].fspiopError.errorInformation.errorCode, '3100')
+        test.equal(kafkaCallOne.args[2].fspiopError.errorInformation.errorDescription, 'Generic validation error - fspiop-proxy does not match payee proxy on the Fulfil callback response')
+        test.equal(kafkaCallOne.args[2].eventDetail.functionality, Enum.Events.Event.Type.NOTIFICATION)
+        test.equal(kafkaCallOne.args[2].fromSwitch, true)
+        test.ok(TransferService.handlePayeeResponse.notCalled, 'the transfer state is not changed')
+        test.end()
+      })
+    }
+
+    fulfilTest.test('fail validation with the destination error when there is no fspiop-source header', async (test) => {
+      const localfulfilMessages = MainUtil.clone(fulfilMessages)
+      await Consumer.createHandler(topicName, config, command)
+      Kafka.transformGeneralTopicName.returns(topicName)
+      TransferService.getById.returns(Promise.resolve({
+        payeeFsp: 'dfsp2',
+        payerFsp: 'dfsp1'
+      }))
+      delete localfulfilMessages[0].value.content.headers['fspiop-source']
+      localfulfilMessages[0].value.content.headers['fspiop-destination'] = 'fspdoesnotexist'
+      Kafka.proceed.returns(true)
+
+      const result = await allTransferHandlers.fulfil(null, localfulfilMessages)
+
+      test.equal(result, true)
+      test.ok(Kafka.proceed.calledOnce, 'Kafka.proceed was called once')
+      test.equal(Kafka.proceed.getCall(0).args[2].fspiopError.errorInformation.errorDescription, 'Generic validation error - fspiop-destination does not match payer fsp on the Fulfil callback response')
+      test.ok(TransferService.handlePayeeResponse.notCalled, 'the transfer state is not changed')
+      test.end()
+    })
+
     fulfilTest.test('fail validation when fspiop-source does not match payeeFsp - autocommit is enabled', async (test) => {
       // Setup
       const localfulfilMessages = MainUtil.clone(fulfilMessages)
@@ -1475,6 +1527,44 @@ Test('Transfer handler', transferHandlerTest => {
       test.equal(kafkaCallOne.args[2].eventDetail.action, Enum.Events.Event.Action.COMMIT)
       test.equal(kafkaCallOne.args[2].messageKey, '1')
       test.equal(result, true)
+      test.end()
+    })
+
+    fulfilTest.test('produce message to position topic for a proxied payee whose callback comes through its proxy', async (test) => {
+      const localfulfilMessages = MainUtil.clone(fulfilMessages)
+      await Consumer.createHandler(topicName, config, command)
+      Kafka.transformGeneralTopicName.returns(topicName)
+
+      // Here dfsp2 is the proxy, stored as the payee; the payee itself is in another scheme.
+      TransferService.getById.returns(Promise.resolve({
+        condition: 'condition',
+        payeeFsp: 'dfsp2',
+        payeeIsProxy: true,
+        payerFsp: 'dfsp1',
+        transferState: TransferState.RESERVED
+      }))
+      ilp.update.returns(Promise.resolve())
+      Validator.validateFulfilCondition.returns(true)
+      localfulfilMessages[0].value.content.headers['fspiop-source'] = 'externalPayee'
+      localfulfilMessages[0].value.content.headers['fspiop-destination'] = 'dfsp1'
+      localfulfilMessages[0].value.content.headers['fspiop-proxy'] = 'DFSP2'
+      localfulfilMessages[0].value.content.payload.fulfilment = 'condition'
+      Kafka.proceed.returns(true)
+
+      TransferService.getTransferDuplicateCheck.returns(Promise.resolve(null))
+      TransferService.saveTransferDuplicateCheck.returns(Promise.resolve(null))
+      Comparators.duplicateCheckComparator.withArgs(transfer.transferId, localfulfilMessages[0].value.content.payload).returns(Promise.resolve({
+        hasDuplicateId: false,
+        hasDuplicateHash: false
+      }))
+
+      const result = await allTransferHandlers.fulfil(null, localfulfilMessages)
+      const kafkaCallOne = Kafka.proceed.getCall(0)
+
+      test.equal(result, true)
+      test.equal(kafkaCallOne.args[2].eventDetail.functionality, Enum.Events.Event.Type.POSITION)
+      test.equal(kafkaCallOne.args[2].eventDetail.action, Enum.Events.Event.Action.COMMIT)
+      test.ok(TransferService.handlePayeeResponse.calledOnce, 'the transfer is committed')
       test.end()
     })
 

@@ -49,6 +49,14 @@ const fspiopErrorFactory = {
     )
   },
 
+  fxHeaderProxyValidationError: (cause = null, replyTo = '') => {
+    return Factory.createFSPIOPError(
+      Enums.FSPIOPErrorCodes.VALIDATION_ERROR,
+      ERROR_MESSAGES.fxTransferHeaderProxyValidationError,
+      cause, replyTo
+    )
+  },
+
   fxHeaderDestinationValidationError: (cause = null, replyTo = '') => {
     return Factory.createFSPIOPError(
       Enums.FSPIOPErrorCodes.VALIDATION_ERROR,

@@ -56,6 +56,7 @@ const PROM_METRICS = Object.freeze({
 const ERROR_MESSAGES = Object.freeze({
   fxTransferNotFound: 'fxTransfer not found',
   fxTransferHeaderSourceValidationError: `${Enum.Http.Headers.FSPIOP.SOURCE} header does not match counterPartyFsp on the fxFulfil callback response`,
+  fxTransferHeaderProxyValidationError: `${Enum.Http.Headers.FSPIOP.PROXY} header does not match counterPartyFsp proxy on the fxFulfil callback response`,
   fxTransferHeaderDestinationValidationError: `${Enum.Http.Headers.FSPIOP.DESTINATION} header does not match initiatingFsp on the fxFulfil callback response`,
   fxInvalidFulfilment: 'Invalid FX fulfilment',
   fxTransferNonReservedState: 'Non-RESERVED fxTransfer state',

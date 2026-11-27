@@ -254,5 +254,46 @@ Test('FxFulfilService Tests -->', fxFulfilTest => {
     methodTest.end()
   })
 
+  fxFulfilTest.test('validateHeaders Method Tests -->', methodTest => {
+    // An fxTransfer whose FXP is in another scheme stores the FXP's proxy as its counterPartyFsp.
+    const proxiedFxTransfer = {
+      counterPartyFspName: 'fxpProxy',
+      counterPartyFspIsProxy: true,
+      initiatingFspName: 'dfsp1',
+      initiatingFspIsProxy: false
+    }
+    const functionality = 'NOTIFICATION'
+
+    for (const [description, proxy] of [['no', undefined], ['another', 'otherProxy']]) {
+      methodTest.test(`should reject a callback for a proxied FXP with ${description} fspiop-proxy header`, async t => {
+        const { service } = createFxFulfilServiceWithTestData(fixtures.fxFulfilKafkaMessageDto())
+        service.kafkaProceed = sandbox.stub()
+        const headers = { 'fspiop-source': 'externalFxp', 'fspiop-destination': 'dfsp1', ...(proxy && { 'fspiop-proxy': proxy }) }
+
+        try {
+          await service.validateHeaders({ transfer: proxiedFxTransfer, headers, functionality })
+          t.fail('Should throw fxTransferHeaderProxyValidationError')
+        } catch (err) {
+          t.equal(err.message, ERROR_MESSAGES.fxTransferHeaderProxyValidationError)
+        }
+        t.ok(service.kafkaProceed.calledOnce, 'the error is sent back to the sender')
+        checkErrorPayload(t)(service.kafkaProceed.lastCall.args[0].fspiopError, fspiopErrorFactory.fxHeaderProxyValidationError())
+        t.end()
+      })
+    }
+
+    methodTest.test('should accept a callback for a proxied FXP forwarded by its proxy (case-insensitive)', async t => {
+      const { service } = createFxFulfilServiceWithTestData(fixtures.fxFulfilKafkaMessageDto())
+      service.kafkaProceed = sandbox.stub()
+      const headers = { 'fspiop-source': 'externalFxp', 'fspiop-destination': 'dfsp1', 'fspiop-proxy': 'FXPPROXY' }
+
+      await service.validateHeaders({ transfer: proxiedFxTransfer, headers, functionality })
+      t.ok(service.kafkaProceed.notCalled)
+      t.end()
+    })
+
+    methodTest.end()
+  })
+
   fxFulfilTest.end()
 })
