@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [20.5.4](https://github.com/mojaloop/central-ledger/compare/v20.5.3...v20.5.4) (2026-11-27)
+
+
+### Bug Fixes
+
+* check the proxy on fulfil callbacks for a payee or FXP in another scheme ([#1323](https://github.com/mojaloop/central-ledger/issues/1323)) ([99aaef9](https://github.com/mojaloop/central-ledger/commit/99aaef97bcdfa6662994c24cdc816bdfb7108f0d))
+
+
+### Chore
+
+* **sbom:** update sbom [skip ci] ([0f59aea](https://github.com/mojaloop/central-ledger/commit/0f59aeaf8871b1801841ba6037e304ed84091c9f))
+
 ### [20.5.3](https://github.com/mojaloop/central-ledger/compare/v20.5.2...v20.5.3) (2026-11-26)
 
 
