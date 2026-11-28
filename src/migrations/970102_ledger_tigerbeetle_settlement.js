@@ -26,7 +26,7 @@
 
 const SETTLEMENT_WINDOW_STATES = [
   'OPEN',
-  'CLOSED',
+  'CLOSED'
 ]
 
 exports.up = async (knex) => {

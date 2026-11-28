@@ -486,7 +486,6 @@ const saveTransferPrepared = async (payload, stateReason = null, hasPassedValida
       amount: payload.amount.amount,
       currencyId: payload.amount.currency,
       ilpCondition: payload.condition,
-      // TODO: LD if we use an invalid date, this breaks. 
       expirationDate: Time.getUTCString(new Date(payload.expiration)),
       createdDate: new Date()
     }
@@ -1029,8 +1028,8 @@ const timeoutExpireReserved = async (segmentId, intervalMin, intervalMax, fxSegm
               .leftJoin('transferTimeout AS tt', 'tt.transferId', 't.transferId')
               .whereNull('tt.transferId')
               .whereIn('tsc.transferStateId', [
-                `${Enum.Transfers.TransferInternalState.RECEIVED_PREPARE}`, 
-                `${Enum.Transfers.TransferState.RESERVED}`,
+                `${Enum.Transfers.TransferInternalState.RECEIVED_PREPARE}`,
+                `${Enum.Transfers.TransferState.RESERVED}`
               ])
               .select('t.transferId', 't.expirationDate')
           })
